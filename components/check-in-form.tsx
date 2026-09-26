@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { IdPhotoUpload } from "@/components/id-photo-upload";
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ export function CheckInForm() {
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const [plateWarning, setPlateWarning] = useState(false);
+  const [idPhoto, setIdPhoto] = useState<File | null>(null);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,12 +39,19 @@ export function CheckInForm() {
 
     startTransition(async () => {
       try {
-        await checkInVisitor({ visitor_name, host_name, purpose, plate_number });
+        await checkInVisitor({
+          visitor_name,
+          host_name,
+          purpose,
+          plate_number,
+          id_photo: idPhoto,
+        });
         toast.success(`${visitor_name} checked in.`, {
           description: "Hold their ID at the counter until check-out.",
         });
         formRef.current?.reset();
         setPlateWarning(false);
+        setIdPhoto(null);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Check-in failed.");
       }
@@ -108,6 +117,11 @@ export function CheckInForm() {
               rows={3}
               required
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Surrendered ID</Label>
+            <IdPhotoUpload value={idPhoto} onChange={setIdPhoto} />
           </div>
 
           <Button type="submit" variant="accent" className="w-full" disabled={isPending}>

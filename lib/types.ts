@@ -12,6 +12,8 @@ export interface VisitorLog {
   logged_by: string | null; // Supabase auth.users.id of the guard who checked the visitor in
   checked_out_by: string | null; // Supabase auth.users.id of the guard who checked the visitor out
   created_at: string;
+  id_photo_path: string | null; // path within the private "visitor-ids" storage bucket
+  id_photo_signed_url?: string | null; // attached at fetch time, expires after a few minutes — never stored
 }
 
 export interface CheckInInput {
@@ -19,4 +21,5 @@ export interface CheckInInput {
   plate_number?: string;
   host_name: string;
   purpose: string;
+  id_photo?: File | null;
 }

@@ -3,10 +3,17 @@
 import { useEffect, useState, useTransition } from "react";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
+import { UserRound } from "lucide-react";
 import { checkOutVisitor } from "@/lib/actions";
 import type { VisitorLog } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -22,6 +29,46 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+function IdPhotoThumbnail({ visitor }: { visitor: VisitorLog }) {
+  const [open, setOpen] = useState(false);
+
+  if (!visitor.id_photo_signed_url) {
+    return (
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+        <UserRound className="h-4 w-4" />
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="block h-10 w-10 overflow-hidden rounded-full ring-1 ring-border transition-shadow hover:ring-2 hover:ring-accent"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={visitor.id_photo_signed_url}
+          alt={`ID photo for ${visitor.visitor_name}`}
+          className="h-full w-full object-cover"
+        />
+      </button>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{visitor.visitor_name}'s ID</DialogTitle>
+        </DialogHeader>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={visitor.id_photo_signed_url}
+          alt={`ID photo for ${visitor.visitor_name}`}
+          className="w-full rounded-md object-contain"
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export function ActiveVisitorsTable({
   initialVisitors,
@@ -84,6 +131,7 @@ export function ActiveVisitorsTable({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-14">ID</TableHead>
                 <TableHead>Visitor</TableHead>
                 <TableHead>Plate #</TableHead>
                 <TableHead>Visiting</TableHead>
@@ -96,6 +144,9 @@ export function ActiveVisitorsTable({
             <TableBody>
               {visitors.map((v) => (
                 <TableRow key={v.id}>
+                  <TableCell>
+                    <IdPhotoThumbnail visitor={v} />
+                  </TableCell>
                   <TableCell className="font-medium">{v.visitor_name}</TableCell>
                   <TableCell className="font-mono-tabular text-muted-foreground">
                     {v.plate_number || "—"}

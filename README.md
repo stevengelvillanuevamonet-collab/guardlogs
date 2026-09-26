@@ -49,6 +49,9 @@ added in 20.6).
    sidebar, paste in the contents of `supabase/migrations/001_visitor_logs.sql`
    from this project, and click **Run**. This creates the `visitor_logs`
    table with Row Level Security enabled (only signed-in guards can read/write).
+   Then do the same with `supabase/migrations/002_visitor_id_photos.sql` —
+   this adds ID-photo support (a private storage bucket + its own RLS
+   policies). Run them in that order; the second depends on the first.
 4. Go to **Project Settings → API**. You'll need:
    - **Project URL**
    - **anon / public key**
@@ -193,9 +196,10 @@ components/
   login-form.tsx           Email/password sign-in (Client Component)
   sign-out-button.tsx       Signs out and redirects to /login
   check-in-form.tsx         The check-in form (Client Component)
-  active-visitors-table.tsx  Live "Inside Campus" table + Check Out button
+  id-photo-upload.tsx        Drag & drop / camera capture control for ID photos
+  active-visitors-table.tsx  Live "Inside Campus" table + Check Out button + photo viewer
   recent-log-table.tsx      History of check-ins/outs
-  ui/                        shadcn/ui primitives (button, input, table, card...)
+  ui/                        shadcn/ui primitives (button, input, table, card, dialog...)
 lib/
   actions.ts                Server Actions: checkInVisitor, checkOutVisitor,
                              getActiveVisitors, getRecentLogs
@@ -205,10 +209,32 @@ lib/
   types.ts                   Shared TypeScript types
 middleware.ts                Route protection (redirects signed-out guards to /login)
 scripts/create-guard.mjs     CLI to manually provision a guard account
-supabase/migrations/         SQL schema + Row Level Security policies
+supabase/migrations/         SQL schema, ID photo storage bucket, and RLS policies
 ```
 
-## Extending it
+## ID photo capture
+
+Guards can optionally photograph or upload the visitor's surrendered ID
+during check-in — drag & drop on desktop, or tap to open the camera directly
+on a tablet/phone. It's stored securely, not as a casual attachment:
+
+- The photo goes into a **private** Supabase Storage bucket (`visitor-ids`)
+  — there is no public URL for it, ever.
+- The database only stores the file's **path**, never a URL.
+- When the dashboard needs to *show* a photo, the server generates a
+  **signed URL that expires after 5 minutes** (`getActiveVisitors` /
+  `getRecentLogs` in `lib/actions.ts`) — so a leaked link goes stale almost
+  immediately, unlike a permanent public image URL.
+- Row Level Security policies on `storage.objects` mean only a signed-in
+  guard can upload, view, or delete files in that bucket — same model as
+  the `visitor_logs` table itself.
+
+This requires running the second migration file,
+`supabase/migrations/002_visitor_id_photos.sql`, in the Supabase SQL Editor
+(after the first one) — it adds the `id_photo_path` column and creates the
+bucket + its policies. See step 3 above.
+
+## Extending it further
 
 - **Roles (guard vs. admin):** add a `guards` table with a `role` column
   keyed by `auth.uid()`, then tighten the RLS policies in
@@ -220,5 +246,3 @@ supabase/migrations/         SQL schema + Row Level Security policies
   `visitor_logs` to the `supabase_realtime` publication — subscribe to it
   client-side with `supabase.channel(...)` if you want a lobby-facing display
   that updates without a page refresh.
-- **Photo of the visitor's ID:** add an `id_photo_url` column and use Supabase
-  Storage + a `<Input type="file">` in the check-in form.
