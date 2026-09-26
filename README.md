@@ -4,7 +4,7 @@ A digital replacement for the paper guardhouse logbook: guards check visitors
 in (name, plate number, host, purpose), the system timestamps it automatically,
 and visitors show up on a live "Inside Campus" board until they're checked out.
 
-**Stack:** Next.js 14 (App Router) + React + TypeScript + Tailwind/shadcn-ui
+**Stack:** Next.js 15 (App Router) + React 19 + TypeScript + Tailwind/shadcn-ui
 frontend, Next.js Server Actions as the backend, Supabase (Postgres + Auth)
 as the database and login system, deployed on Vercel.
 
@@ -101,20 +101,66 @@ appears in the **Inside Campus** table on the right with an automatic
 check-in time. Click **Check Out** and it disappears from "Inside Campus"
 and shows up in **Recent activity** with a check-out time.
 
-## 7. Deploy to Vercel
+## 7. Push to a fresh GitHub repository
 
-1. Push this project to a GitHub repository (create one on github.com, then
-   `git init`, `git add .`, `git commit -m "guardhouse app"`, `git remote add
-   origin <your-repo-url>`, `git push -u origin main`).
-2. Go to https://vercel.com, sign up, click **Add New → Project**, and import
+If you already have this project connected to a GitHub repo, skip to step 8.
+Otherwise, starting from scratch:
+
+1. **Install Git** if you don't have it: download from https://git-scm.com,
+   run the installer with defaults, then confirm with `git --version` in a
+   terminal.
+2. **Create an empty repository on GitHub:** sign in at https://github.com,
+   click the **+** in the top-right corner → **New repository**. Give it a
+   name (e.g. `guardhouse-logbook`) and leave it **empty** — don't check
+   "Add a README" or ".gitignore", since this project already has both.
+   Click **Create repository** and copy the URL it shows you
+   (`https://github.com/your-username/guardhouse-logbook.git`).
+3. **Turn the project folder into a git repo and commit everything**, running
+   each line separately in a terminal inside the project folder:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit: guardhouse logbook app"
+   ```
+   (First time using git on this machine? It may ask you to set an identity
+   first — run `git config --global user.name "Your Name"` and
+   `git config --global user.email "you@example.com"`, then repeat the
+   commands above.)
+4. **Connect it to GitHub and push:**
+   ```bash
+   git branch -M main
+   git remote add origin https://github.com/your-username/guardhouse-logbook.git
+   git push -u origin main
+   ```
+   If GitHub asks for a password, it won't accept your normal account
+   password for git operations — use a Personal Access Token instead
+   (GitHub → Settings → Developer settings → Personal access tokens), or
+   follow the browser sign-in prompt if one appears.
+
+From here on, any time you make changes: `git add .`, then
+`git commit -m "describe what changed"`, then `git push`.
+
+## 8. Deploy to Vercel
+
+1. Go to https://vercel.com, sign up (choosing **Continue with GitHub** links
+   the two accounts automatically), click **Add New → Project**, and import
    your GitHub repo.
-3. In the import screen, expand **Environment Variables** and add the three
+2. In the import screen, expand **Environment Variables** and add the three
    keys from your `.env.local` file (`NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
-4. Click **Deploy**. Vercel builds and gives you a live URL.
-5. To create guard accounts against the deployed project, run the script
+3. Click **Deploy**. Vercel builds and gives you a live URL. From now on,
+   every `git push` to `main` triggers an automatic redeploy.
+4. To create guard accounts against the deployed project, run the script
    locally pointed at the same `.env.local` (it talks directly to Supabase,
    not to Vercel) — or use the Supabase dashboard as in step 5.
+
+> **Working inside a OneDrive/Dropbox/Google Drive-synced folder?** These
+> cloud-sync tools constantly watch and lock files, which can cause
+> `npm install` or `git` commands to fail with confusing "file in use" or
+> "directory not empty" errors — especially with `node_modules`, which has
+> tens of thousands of small files. If you hit that, either pause syncing
+> while you work, or better, move the project to a non-synced folder like
+> `C:\Projects\guardhouse`.
 
 ---
 
