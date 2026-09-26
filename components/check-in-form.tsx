@@ -73,7 +73,7 @@ export function CheckInForm() {
             <Input
               id="visitor_name"
               name="visitor_name"
-              placeholder="Juan Dela Cruz"
+              placeholder="Fullname"
               autoComplete="off"
               required
             />
@@ -86,7 +86,7 @@ export function CheckInForm() {
             <Input
               id="plate_number"
               name="plate_number"
-              placeholder="ABC 1234"
+              placeholder="Input Here"
               autoComplete="off"
               onChange={(e) => setPlateWarning(e.target.value.length > 0 && e.target.value.length < 5)}
             />
@@ -102,7 +102,7 @@ export function CheckInForm() {
             <Input
               id="host_name"
               name="host_name"
-              placeholder="Unit 4B — Santos family"
+              placeholder="CB Registrar"
               autoComplete="off"
               required
             />

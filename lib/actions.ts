@@ -5,9 +5,8 @@ import { createServerSupabaseClient } from "./supabase/server";
 import type { CheckInInput, VisitorLog } from "./types";
 
 const ID_PHOTO_BUCKET = "visitor-ids";
-const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300; // 5 minutes — just long enough to load the page
+const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300; 
 
-/** Gets the current Supabase client + signed-in guard, or throws. */
 async function requireGuard() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -20,7 +19,7 @@ async function requireGuard() {
 }
 
 /**
- * Uploads a surrendered ID photo to the private "visitor-ids" bucket and
+ * Diri e upload ang surrendered ID photo to the private "visitor-ids" bucket and
  * returns its storage path (not a URL — the bucket has no public access).
  */
 async function uploadIdPhoto(
@@ -40,7 +39,7 @@ async function uploadIdPhoto(
   return path;
 }
 
-/** Attaches short-lived signed URLs to any logs that have an ID photo on file. */
+
 async function withSignedPhotoUrls(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   logs: VisitorLog[]

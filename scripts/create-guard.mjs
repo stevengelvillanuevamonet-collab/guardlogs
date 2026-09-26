@@ -1,13 +1,3 @@
-// Manually provisions a guard account in Supabase Auth. Since this app has
-// no public sign-up page, this (or the Supabase dashboard — see README) is
-// how an administrator adds a new guard.
-//
-// Usage:
-//   node --env-file=.env.local scripts/create-guard.mjs guard@example.com "S0meStrongPassword!"
-//
-// Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL to be set
-// (already in .env.local if you followed the README).
-
 import { createClient } from "@supabase/supabase-js";
 
 const [, , email, password] = process.argv;
@@ -36,7 +26,7 @@ const supabase = createClient(url, serviceRoleKey, {
 const { data, error } = await supabase.auth.admin.createUser({
   email,
   password,
-  email_confirm: true, // skip the confirmation email — the admin is vouching for this guard
+  email_confirm: true, 
 });
 
 if (error) {

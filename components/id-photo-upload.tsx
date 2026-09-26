@@ -132,7 +132,6 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
           </div>
         </div>
       )}
-      <p className="mt-1.5 text-xs text-muted-foreground">Optional — stored privately, never public.</p>
     </div>
   );
 }
