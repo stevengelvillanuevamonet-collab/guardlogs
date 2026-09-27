@@ -27,7 +27,7 @@ export default async function GuardhousePage() {
               GH
             </div>
             <div className="leading-tight">
-              <p className="font-semibold">Guardhouse Logbook</p>
+              <p className="font-semibold">EGardMo</p>
               <p className="text-xs text-primary-foreground/70">
                 Visitor check-in &amp; ID surrender
               </p>

@@ -18,8 +18,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Guardhouse Logbook",
-  description: "Digital visitor check-in and ID surrender log for guardhouses.",
+  title: "EGardMo",
+  description: "Digital visitor check-in and ID surrender log.",
 };
 
 export default function RootLayout({

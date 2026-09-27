@@ -11,8 +11,7 @@ insert into storage.buckets (id, name, public)
 values ('visitor-ids', 'visitor-ids', false)
 on conflict (id) do nothing;
 
--- Only signed-in guards can upload, view, or delete files in this bucket —
--- mirrors the visitor_logs table policies.
+
 create policy "Authenticated guards can upload ID photos"
   on storage.objects for insert
   to authenticated

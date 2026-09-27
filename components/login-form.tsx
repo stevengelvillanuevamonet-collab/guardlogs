@@ -47,10 +47,9 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Guard sign-in</CardTitle>
+        <CardTitle>EgardMo - Sign In</CardTitle>
         <CardDescription>
-          Use the email and password your administrator set up for you. New
-          accounts are added by an administrator, not self-registered.
+          Use the email and password your administrator has provided. 
         </CardDescription>
       </CardHeader>
       <CardContent>
