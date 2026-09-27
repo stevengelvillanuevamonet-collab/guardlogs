@@ -1,5 +1,5 @@
-import { format } from "date-fns";
 import type { VisitorLog } from "@/lib/types";
+import { formatDateAndTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -44,10 +44,10 @@ export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono-tabular text-muted-foreground">
-                  {format(new Date(v.time_in), "MMM d, h:mm a")}
+                  {formatDateAndTime(v.time_in)}
                 </TableCell>
                 <TableCell className="font-mono-tabular text-muted-foreground">
-                  {v.time_out ? format(new Date(v.time_out), "MMM d, h:mm a") : "—"}
+                  {v.time_out ? formatDateAndTime(v.time_out) : "—"}
                 </TableCell>
               </TableRow>
             ))}

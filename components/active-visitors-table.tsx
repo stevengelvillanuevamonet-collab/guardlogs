@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { format, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
 import { UserRound } from "lucide-react";
 import { checkOutVisitor } from "@/lib/actions";
 import type { VisitorLog } from "@/lib/types";
+import { formatTimeOfDay } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -156,7 +157,7 @@ export function ActiveVisitorsTable({
                     {v.purpose}
                   </TableCell>
                   <TableCell className="font-mono-tabular">
-                    {format(new Date(v.time_in), "h:mm a")}
+                    {formatTimeOfDay(v.time_in)}
                   </TableCell>
                   <TableCell className="font-mono-tabular text-muted-foreground">
                     {formatDistanceToNowStrict(new Date(v.time_in))}
