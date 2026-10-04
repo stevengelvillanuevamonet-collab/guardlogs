@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, ImageUp, RotateCcw, X } from "lucide-react";
+import { Camera, ImageUp, RotateCcw, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { CameraCapture } from "@/components/camera-capture";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
 
@@ -19,7 +21,9 @@ function isAcceptableImage(file: File): string | null {
 }
 
 export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null); // Diri magpili picture gikan files
+  const nativeCameraRef = useRef<HTMLInputElement>(null); // Mo open ang camera
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
@@ -46,6 +50,17 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
     [onChange]
   );
 
+  function openCamera() {
+    // Live in-browser camera where supported (needs https or localhost);
+    // otherwise fall back to the native capture input (opens the camera app on phones).
+    if (typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function") {
+      setCameraOpen(true);
+    } else {
+      toast.info("Live camera isn't available here — opening your device's camera/file picker.");
+      nativeCameraRef.current?.click();
+    }
+  }
+
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) acceptFile(file);
@@ -61,13 +76,28 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
 
   return (
     <div>
+      {/* Pick an existing image (gallery / files) */}
       <input
         ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleInputChange}
+      />
+      {/* Fallback when a live camera isn't available: opens the phone's camera app */}
+      <input
+        ref={nativeCameraRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="hidden"
         onChange={handleInputChange}
+      />
+      <CameraCapture
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={acceptFile}
+        onUnavailable={() => inputRef.current?.click()}
       />
 
       {previewUrl ? (
@@ -78,14 +108,22 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
             alt="Surrendered ID preview"
             className="h-40 w-full object-cover"
           />
-          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={openCamera}
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition-colors hover:bg-white"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Retake
+            </button>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               className="inline-flex items-center gap-1.5 rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-primary shadow-sm transition-colors hover:bg-white"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Retake
+              <Upload className="h-3.5 w-3.5" />
+              Upload
             </button>
             <button
               type="button"
@@ -102,33 +140,32 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
         </div>
       ) : (
         <div
-          onClick={() => inputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
             setIsDraggingOver(true);
           }}
           onDragLeave={() => setIsDraggingOver(false)}
           onDrop={handleDrop}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
-          }}
           className={cn(
-            "flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed text-center transition-colors",
+            "flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-4 text-center transition-colors",
             isDraggingOver
               ? "border-accent bg-accent/10"
-              : "border-input bg-secondary/40 hover:border-accent/60 hover:bg-secondary/60"
+              : "border-input bg-secondary/40"
           )}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background shadow-sm">
-            <Camera className="h-4 w-4 text-muted-foreground" />
-          </div>
           <div className="space-y-0.5">
-            <p className="text-sm font-medium">Capture or upload the surrendered ID</p>
+            <p className="text-sm font-medium">Surrendered ID</p>
             <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-              <ImageUp className="h-3 w-3" /> Drag & drop, or tap to use the camera
+              <ImageUp className="h-3 w-3" /> Take a photo, upload a file, or drag &amp; drop
             </p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button type="button" variant="accent" size="sm" onClick={openCamera}>
+              <Camera className="h-4 w-4" /> Take photo
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+              <Upload className="h-4 w-4" /> Upload file
+            </Button>
           </div>
         </div>
       )}

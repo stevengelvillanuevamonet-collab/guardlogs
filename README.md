@@ -196,7 +196,10 @@ components/
   login-form.tsx           Email/password sign-in (Client Component)
   sign-out-button.tsx       Signs out and redirects to /login
   check-in-form.tsx         The check-in form (Client Component)
-  id-photo-upload.tsx        Drag & drop / camera capture control for ID photos
+  id-photo-upload.tsx        Take photo / upload / drag & drop control for ID photos
+  camera-capture.tsx         Live in-browser camera dialog
+  app-header.tsx             Shared header + navigation
+  report-toolbar.tsx         Date picker + print/Word/Excel buttons for the report
   active-visitors-table.tsx  Live "Inside Campus" table + Check Out button + photo viewer
   recent-log-table.tsx      History of check-ins/outs
   ui/                        shadcn/ui primitives (button, input, table, card, dialog...)
@@ -215,8 +218,12 @@ supabase/migrations/         SQL schema, ID photo storage bucket, and RLS polici
 ## ID photo capture
 
 Guards can optionally photograph or upload the visitor's surrendered ID
-during check-in — drag & drop on desktop, or tap to open the camera directly
-on a tablet/phone. It's stored securely, not as a casual attachment:
+during check-in. **Take photo** opens a live camera view right in the browser
+(laptop webcam or tablet/phone camera, with a *Switch camera* button);
+**Upload file** picks an existing image, and drag & drop also works. Live
+camera needs `https` (Vercel provides it) or `localhost`; on plain `http` the
+app falls back to the device's file/camera picker. It's stored securely, not
+as a casual attachment:
 
 - The photo goes into a **private** Supabase Storage bucket (`visitor-ids`)
   — there is no public URL for it, ever.
@@ -233,6 +240,24 @@ This requires running the second migration file,
 `supabase/migrations/002_visitor_id_photos.sql`, in the Supabase SQL Editor
 (after the first one) — it adds the `id_photo_path` column and creates the
 bucket + its policies. See step 3 above.
+
+## Daily visitor report (print / Word / Excel)
+
+Open **Daily Report** in the top navigation (`/reports`). Pick a date (or step
+with the arrows) to see every visitor who checked in that day, with totals,
+time in/out, time inside and status.
+
+- **Print** — print-friendly A4 landscape layout (use *Save as PDF* in the
+  print dialog to keep a digital copy). Header and buttons are hidden, the
+  table header repeats on each page, and signature lines are included.
+- **Word (.docx)** and **Excel (.xlsx)** — download the same report as a file
+  (`/api/reports/daily?date=YYYY-MM-DD&format=docx|xlsx`). Both are set up to
+  print on A4 landscape; the Excel sheet has frozen headers and filters.
+
+Days run midnight to midnight in campus time (`Asia/Manila`, see
+`lib/utils.ts`). A visitor belongs to the day they checked in; if they check
+out on a later day, the time-out column shows the date too. No database
+changes are needed for this feature.
 
 ## Extending it further
 

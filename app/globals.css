@@ -90,3 +90,20 @@
     transparent
   );
 }
+
+/* Printing the daily report: A4 landscape, keep colours on table headers */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  thead {
+    display: table-header-group;
+  }
+}
