@@ -21,8 +21,8 @@ function isAcceptableImage(file: File): string | null {
 }
 
 export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null); // Diri magpili picture gikan files
-  const nativeCameraRef = useRef<HTMLInputElement>(null); // Mo open ang camera
+  const inputRef = useRef<HTMLInputElement>(null); // choose an existing file
+  const nativeCameraRef = useRef<HTMLInputElement>(null); // phone camera fallback
   const [cameraOpen, setCameraOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
