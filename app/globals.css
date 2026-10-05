@@ -152,8 +152,6 @@
   .anim-kenburns, .anim-drift, .btn-sheen::after { animation: none; }
   .anim-fade-up, .anim-rule { animation: none; opacity: 1; transform: none; }
 }
-<<<<<<< HEAD
-=======
 
 /* Responsive page gutters (tailwind's container.screens override means the
    padding breakpoints in the config don't apply, so set them here). */
@@ -163,4 +161,3 @@
 @media (min-width: 1024px) {
   .container { padding-inline: 2rem; }
 }
->>>>>>> 9e413bf (fixed mobile ui)
