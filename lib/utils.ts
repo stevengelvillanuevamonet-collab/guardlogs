@@ -119,3 +119,68 @@ export function formatDuration(startIso: string, endIso: string): string {
   if (h === 0) return `${m}m`;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
+
+/* ───────────── Monthly & yearly report helpers ───────────── */
+
+/** True for a real month in YYYY-MM form. */
+export function isValidMonthString(value: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/** True for a plausible four-digit year. */
+export function isValidYearString(value: string): boolean {
+  return /^\d{4}$/.test(value) && Number(value) >= 2000 && Number(value) <= 2100;
+}
+
+/** Shift a YYYY-MM month by a number of months. */
+export function shiftMonth(month: string, months: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + months, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+/** Number of days in a YYYY-MM month. */
+export function daysInMonth(month: string): number {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+/** [start, end) ISO timestamps covering one campus calendar month. */
+export function campusMonthRange(month: string): { start: string; end: string } {
+  const start = new Date(`${month}-01T00:00:00${CAMPUS_UTC_OFFSET}`);
+  const end = new Date(`${shiftMonth(month, 1)}-01T00:00:00${CAMPUS_UTC_OFFSET}`);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+/** [start, end) ISO timestamps covering one campus calendar year. */
+export function campusYearRange(year: string): { start: string; end: string } {
+  const start = new Date(`${year}-01-01T00:00:00${CAMPUS_UTC_OFFSET}`);
+  const end = new Date(`${Number(year) + 1}-01-01T00:00:00${CAMPUS_UTC_OFFSET}`);
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+/** e.g. "October 2026" */
+export function formatMonthLabel(month: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${month}-15T12:00:00Z`));
+}
+
+/** e.g. "Thu, Oct 1" for a YYYY-MM-DD date */
+export function formatShortDay(date: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${date}T12:00:00Z`));
+}
+
+/** e.g. "January" for month number 1-12 */
+export function monthName(month: number): string {
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "long" }).format(
+    new Date(Date.UTC(2000, month - 1, 15, 12))
+  );
+}

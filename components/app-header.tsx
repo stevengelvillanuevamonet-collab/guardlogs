@@ -1,23 +1,32 @@
-import Link from "next/link";
-import { FileText, LayoutDashboard } from "lucide-react";
 import { LogoMark } from "@/components/logo-mark";
 import { SignOutButton } from "@/components/sign-out-button";
-import { cn } from "@/lib/utils";
+import { HeaderNav } from "@/components/header-nav";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export function AppHeader({
+// Number of applications waiting for review — shown as a badge on the admin nav.
+async function countPendingApplications(): Promise<number> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { count } = await supabase
+      .from("guard_applications")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    return count ?? 0;
+  } catch {
+    return 0; // table not migrated yet, or a transient error — never break the page for a badge
+  }
+}
+
+export async function AppHeader({
   email,
-  active,
+  role = "guard",
 }: {
   email?: string | null;
-  active: "dashboard" | "reports";
+  role?: "admin" | "guard";
+  /** @deprecated The active link is now detected from the URL. */
+  active?: string;
 }) {
-  const link = (isActive: boolean) =>
-    cn(
-      "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
-      isActive
-        ? "bg-primary-foreground/10 text-primary-foreground"
-        : "text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-    );
+  const pending = role === "admin" ? await countPendingApplications() : 0;
 
   return (
     <header className="relative bg-primary text-primary-foreground print:hidden">
@@ -30,33 +39,23 @@ export function AppHeader({
             <div className="min-w-0 leading-tight">
               <p className="font-serif text-lg font-semibold tracking-tight">EGardMo</p>
               <p className="truncate text-[10px] uppercase tracking-[0.12em] text-primary-foreground/60 sm:text-xs sm:tracking-[0.14em]">
-                Visitor Check-in &amp; ID Register
+                {role === "admin" ? "Administration" : "Visitor Check-in & ID Register"}
               </p>
             </div>
           </div>
-          <nav className="ml-2 hidden items-center gap-1 sm:flex">
-            <Link href="/" className={link(active === "dashboard")}>
-              <LayoutDashboard className="h-4 w-4" /> Dashboard
-            </Link>
-            <Link href="/reports" className={link(active === "reports")}>
-              <FileText className="h-4 w-4" /> Daily Report
-            </Link>
-          </nav>
+          <HeaderNav role={role} pendingApplications={pending} variant="desktop" />
         </div>
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+          {role === "admin" && (
+            <span className="rounded-full border border-accent/50 bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">
+              Admin
+            </span>
+          )}
           <span className="hidden text-sm text-primary-foreground/70 md:inline">{email}</span>
           <SignOutButton />
         </div>
       </div>
-      {/* Mobile nav */}
-      <nav className="container flex items-center gap-1 overflow-x-auto pb-3 sm:hidden">
-        <Link href="/" className={link(active === "dashboard")}>
-          <LayoutDashboard className="h-4 w-4" /> Dashboard
-        </Link>
-        <Link href="/reports" className={link(active === "reports")}>
-          <FileText className="h-4 w-4" /> Daily Report
-        </Link>
-      </nav>
+      <HeaderNav role={role} pendingApplications={pending} variant="mobile" />
       <div className="h-px brass-rule" />
     </header>
   );

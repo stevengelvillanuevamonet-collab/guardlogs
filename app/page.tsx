@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { getActiveVisitors, getRecentLogs } from "@/lib/actions";
 import { CheckInForm } from "@/components/check-in-form";
 import { ActiveVisitorsTable } from "@/components/active-visitors-table";
@@ -8,10 +8,7 @@ import { AppHeader } from "@/components/app-header";
 export const dynamic = "force-dynamic";
 
 export default async function GuardhousePage() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getSessionUser();
 
   const [activeVisitors, recentLogs] = await Promise.all([
     getActiveVisitors(),
@@ -20,7 +17,7 @@ export default async function GuardhousePage() {
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background">
-      <AppHeader email={user?.email} active="dashboard" />
+      <AppHeader email={session?.user.email} role={session?.role} />
 
       <main className="container grid grid-cols-1 gap-4 py-5 sm:gap-6 sm:py-8 lg:grid-cols-[380px_minmax(0,1fr)]">
         <div className="min-w-0 lg:sticky lg:top-8 lg:self-start">

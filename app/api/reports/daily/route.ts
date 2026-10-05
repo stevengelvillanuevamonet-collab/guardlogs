@@ -1,40 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getDailyReport } from "@/lib/reports";
-import { buildDocx, buildXlsx } from "@/lib/report-exports";
-import { isValidDateString, todayInCampus } from "@/lib/utils";
+// The original daily-report download URL keeps working: with no `period`
+// parameter the shared export handler defaults to a daily report.
+export { GET } from "../export/route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
-/** GET /api/reports/daily?date=YYYY-MM-DD&format=xlsx|docx (date defaults to today) */
-export async function GET(request: NextRequest) {
-  const params = request.nextUrl.searchParams;
-  const date = params.get("date") || todayInCampus();
-  const format = params.get("format") || "xlsx";
-
-  if (!isValidDateString(date)) {
-    return NextResponse.json({ error: "Invalid date. Use YYYY-MM-DD." }, { status: 400 });
-  }
-  if (format !== "xlsx" && format !== "docx") {
-    return NextResponse.json({ error: "Format must be xlsx or docx." }, { status: 400 });
-  }
-
-  try {
-    const report = await getDailyReport(date);
-    const body = format === "xlsx" ? await buildXlsx(report) : await buildDocx(report);
-
-    return new NextResponse(new Uint8Array(body), {
-      headers: {
-        "Content-Type": format === "xlsx" ? XLSX_MIME : DOCX_MIME,
-        "Content-Disposition": `attachment; filename="visitor-report-${date}.${format}"`,
-        "Cache-Control": "no-store",
-      },
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not build report.";
-    return NextResponse.json({ error: message }, { status: message === "Not signed in." ? 401 : 500 });
-  }
-}

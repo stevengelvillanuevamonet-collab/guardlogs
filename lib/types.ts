@@ -23,3 +23,52 @@ export interface CheckInInput {
   purpose: string;
   id_photo?: File | null;
 }
+
+/* ───────────── Admin: guards & applications ───────────── */
+
+export type ApplicationStatus = "pending" | "approved" | "rejected";
+export type ShiftPreference = "Day" | "Night" | "Any";
+
+export interface GuardApplication {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  address: string | null;
+  years_experience: number;
+  license_no: string | null;
+  shift_preference: ShiftPreference;
+  about: string | null;
+  status: ApplicationStatus;
+  review_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  guard_user_id: string | null;
+  created_at: string;
+}
+
+export interface GuardProfile {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+  role: "admin" | "guard";
+  is_active: boolean;
+  created_at: string;
+}
+
+/** A visitor log plus the names of the guards who handled it (admin views). */
+export interface AdminVisitorLog extends VisitorLog {
+  logged_by_name: string | null;
+  checked_out_by_name: string | null;
+}
+
+/** One-time login details shown to an admin right after an account is created. */
+export interface IssuedCredentials {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+/** Rows per page in the admin visitor-log viewer. */
+export const VISITOR_LOG_PAGE_SIZE = 25;

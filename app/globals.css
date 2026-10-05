@@ -148,6 +148,16 @@
   pointer-events: none;
 }
 
+/* Keep browser autofill from painting the dark login inputs white */
+.login-field:-webkit-autofill,
+.login-field:-webkit-autofill:hover,
+.login-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  box-shadow: 0 0 0 1000px hsl(222 40% 17%) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-kenburns, .anim-drift, .btn-sheen::after { animation: none; }
   .anim-fade-up, .anim-rule { animation: none; opacity: 1; transform: none; }

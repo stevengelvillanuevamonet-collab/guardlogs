@@ -18,9 +18,8 @@ import {
   VerticalAlign,
   WidthType,
 } from "docx";
-import type { DailyReport } from "./reports";
+import type { Report } from "./reports";
 
-const REPORT_TITLE = "Daily Visitor Report";
 const ORG_LINE = "EGardMo — Guardhouse Visitor Check-in & ID Register";
 const NAVY = "141B2E";
 const HEADERS = [
@@ -35,18 +34,97 @@ const HEADERS = [
   "Status",
 ];
 
-function summaryLine(r: DailyReport) {
+function summaryLine(r: Report) {
   const { total, checkedOut, stillInside, withVehicle } = r.stats;
   return `Total visitors: ${total}   |   Checked out: ${checkedOut}   |   Still inside: ${stillInside}   |   With vehicle: ${withVehicle}`;
 }
 
 /* ───────────────────────── Excel ───────────────────────── */
 
-export async function buildXlsx(report: DailyReport): Promise<Buffer> {
+export async function buildXlsx(report: Report): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "EGardMo";
   wb.created = new Date();
 
+  // Monthly and yearly reports open on a per-day / per-month summary sheet.
+  if (report.breakdown.length > 0) addSummarySheet(wb, report);
+  addLogSheet(wb, report);
+
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
+  const ws = wb.addWorksheet("Summary", {
+    pageSetup: {
+      paperSize: 9,
+      orientation: "portrait",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.5, right: 0.5, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 },
+    },
+    headerFooter: {
+      oddFooter: `&L&8Generated ${report.generatedAt}&C&8Page &P of &N&R&8${report.title}`,
+    },
+  });
+  ws.columns = [{ width: 24 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }];
+
+  const merged = (row: number, text: string, font: Partial<ExcelJS.Font>, height?: number) => {
+    ws.mergeCells(row, 1, row, 5);
+    const cell = ws.getCell(row, 1);
+    cell.value = text;
+    cell.font = font;
+    cell.alignment = { horizontal: "left", vertical: "middle" };
+    if (height) ws.getRow(row).height = height;
+  };
+  merged(1, report.title, { name: "Calibri", size: 18, bold: true, color: { argb: `FF${NAVY}` } }, 28);
+  merged(2, ORG_LINE, { name: "Calibri", size: 10, color: { argb: "FF6B7280" } });
+  merged(3, report.label, { name: "Calibri", size: 13, bold: true }, 22);
+  merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
+
+  const headerRowIndex = 6;
+  const headerRow = ws.getRow(headerRowIndex);
+  [report.period === "monthly" ? "Day" : "Month", "Visitors", "Checked out", "Still inside", "With vehicle"].forEach(
+    (h, i) => {
+      const c = headerRow.getCell(i + 1);
+      c.value = h;
+      c.font = { name: "Calibri", bold: true, color: { argb: "FFFFFFFF" }, size: 10.5 };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: `FF${NAVY}` } };
+      c.alignment = { vertical: "middle", horizontal: i === 0 ? "left" : "right" };
+    }
+  );
+  headerRow.height = 24;
+
+  const thin = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
+  const border = { top: thin, left: thin, bottom: thin, right: thin };
+  const rows = [
+    ...report.breakdown.map((b) => ({ ...b, bold: false })),
+    {
+      label: "Total",
+      total: report.stats.total,
+      checkedOut: report.stats.checkedOut,
+      stillInside: report.stats.stillInside,
+      withVehicle: report.stats.withVehicle,
+      bold: true,
+    },
+  ];
+  rows.forEach((b, idx) => {
+    const row = ws.getRow(headerRowIndex + 1 + idx);
+    [b.label, b.total, b.checkedOut, b.stillInside, b.withVehicle].forEach((v, i) => {
+      const c = row.getCell(i + 1);
+      c.value = v;
+      c.font = { name: "Calibri", size: 10.5, bold: b.bold };
+      c.border = border;
+      c.alignment = { vertical: "middle", horizontal: i === 0 ? "left" : "right" };
+      if (b.bold) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
+      else if (idx % 2 === 1) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } };
+    });
+  });
+
+  ws.views = [{ state: "frozen", ySplit: headerRowIndex }];
+}
+
+function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
   const ws = wb.addWorksheet("Visitor Log", {
     pageSetup: {
       paperSize: 9, // A4
@@ -57,7 +135,7 @@ export async function buildXlsx(report: DailyReport): Promise<Buffer> {
       margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.6, header: 0.3, footer: 0.3 },
     },
     headerFooter: {
-      oddFooter: `&L&8Generated ${report.generatedAt}&C&8Page &P of &N&R&8${REPORT_TITLE}`,
+      oddFooter: `&L&8Generated ${report.generatedAt}&C&8Page &P of &N&R&8${report.title}`,
     },
   });
 
@@ -83,7 +161,7 @@ export async function buildXlsx(report: DailyReport): Promise<Buffer> {
     if (height) ws.getRow(row).height = height;
   };
 
-  merged(1, REPORT_TITLE, { name: "Calibri", size: 18, bold: true, color: { argb: `FF${NAVY}` } }, 28);
+  merged(1, report.title, { name: "Calibri", size: 18, bold: true, color: { argb: `FF${NAVY}` } }, 28);
   merged(2, ORG_LINE, { name: "Calibri", size: 10, color: { argb: "FF6B7280" } });
   merged(3, report.label, { name: "Calibri", size: 13, bold: true }, 22);
   merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
@@ -125,7 +203,7 @@ export async function buildXlsx(report: DailyReport): Promise<Buffer> {
     const row = headerRowIndex + 1;
     ws.mergeCells(row, 1, row, lastCol);
     const c = ws.getCell(row, 1);
-    c.value = "No visitors were logged on this date.";
+    c.value = "No visitors were logged in this period.";
     c.font = { name: "Calibri", italic: true, color: { argb: "FF6B7280" } };
     c.alignment = { horizontal: "center", vertical: "middle" };
     ws.getRow(row).height = 28;
@@ -149,8 +227,6 @@ export async function buildXlsx(report: DailyReport): Promise<Buffer> {
 
   ws.views = [{ state: "frozen", ySplit: headerRowIndex }];
   ws.pageSetup.printTitlesRow = `${headerRowIndex}:${headerRowIndex}`;
-
-  return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
 /* ───────────────────────── Word ───────────────────────── */
@@ -190,7 +266,7 @@ function textCell(text: string, i: number, opts: { header?: boolean; shade?: boo
   });
 }
 
-export async function buildDocx(report: DailyReport): Promise<Buffer> {
+export async function buildDocx(report: Report): Promise<Buffer> {
   const headerRow = new TableRow({
     tableHeader: true,
     cantSplit: true,
@@ -231,7 +307,7 @@ export async function buildDocx(report: DailyReport): Promise<Buffer> {
                     alignment: AlignmentType.CENTER,
                     children: [
                       new TextRun({
-                        text: "No visitors were logged on this date.",
+                        text: "No visitors were logged in this period.",
                         italics: true,
                         color: "6B7280",
                         font: "Calibri",
@@ -270,7 +346,7 @@ export async function buildDocx(report: DailyReport): Promise<Buffer> {
 
   const doc = new Document({
     creator: "EGardMo",
-    title: `${REPORT_TITLE} — ${report.label}`,
+    title: `${report.title} — ${report.label}`,
     styles: { default: { document: { run: { font: "Calibri", size: 20 } } } },
     sections: [
       {
@@ -298,7 +374,7 @@ export async function buildDocx(report: DailyReport): Promise<Buffer> {
         children: [
           new Paragraph({
             spacing: { after: 40 },
-            children: [new TextRun({ text: REPORT_TITLE, bold: true, size: 40, color: NAVY })],
+            children: [new TextRun({ text: report.title, bold: true, size: 40, color: NAVY })],
           }),
           new Paragraph({
             spacing: { after: 120 },
@@ -312,6 +388,7 @@ export async function buildDocx(report: DailyReport): Promise<Buffer> {
             spacing: { after: 200 },
             children: [new TextRun({ text: summaryLine(report), size: 20 })],
           }),
+          ...summarySection(report),
           new Table({
             width: { size: TABLE_WIDTH, type: WidthType.DXA },
             columnWidths: COL_WIDTHS,
@@ -377,4 +454,85 @@ export async function buildDocx(report: DailyReport): Promise<Buffer> {
   });
 
   return Buffer.from(await Packer.toBuffer(doc));
+}
+
+/* Monthly / yearly: a per-day or per-month summary table ahead of the full log. */
+
+const SUMMARY_WIDTHS = [5398, 2500, 2500, 2500, 2500]; // sums to TABLE_WIDTH
+
+function summaryCell(
+  text: string,
+  i: number,
+  opts: { header?: boolean; shade?: boolean; bold?: boolean } = {}
+) {
+  return new TableCell({
+    width: { size: SUMMARY_WIDTHS[i], type: WidthType.DXA },
+    borders,
+    verticalAlign: VerticalAlign.CENTER,
+    margins: { top: 50, bottom: 50, left: 100, right: 100 },
+    shading: opts.header
+      ? { type: ShadingType.CLEAR, fill: NAVY, color: "auto" }
+      : opts.bold
+        ? { type: ShadingType.CLEAR, fill: "E5E7EB", color: "auto" }
+        : opts.shade
+          ? { type: ShadingType.CLEAR, fill: "F3F4F6", color: "auto" }
+          : undefined,
+    children: [
+      new Paragraph({
+        alignment: i === 0 ? AlignmentType.LEFT : AlignmentType.RIGHT,
+        children: [
+          new TextRun({
+            text,
+            font: "Calibri",
+            size: 20,
+            bold: opts.header || opts.bold,
+            color: opts.header ? "FFFFFF" : undefined,
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+function summarySection(report: Report): (Paragraph | Table)[] {
+  if (report.breakdown.length === 0) return [];
+
+  const heads = [report.period === "monthly" ? "Day" : "Month", "Visitors", "Checked out", "Still inside", "With vehicle"];
+  const lines = [
+    ...report.breakdown.map((b) => ({ ...b, bold: false })),
+    { label: "Total", ...report.stats, bold: true },
+  ];
+
+  return [
+    new Paragraph({
+      spacing: { after: 100 },
+      children: [new TextRun({ text: report.breakdownTitle, bold: true, size: 24, color: NAVY })],
+    }),
+    new Table({
+      width: { size: TABLE_WIDTH, type: WidthType.DXA },
+      columnWidths: SUMMARY_WIDTHS,
+      layout: TableLayoutType.FIXED,
+      rows: [
+        new TableRow({
+          tableHeader: true,
+          cantSplit: true,
+          children: heads.map((h, i) => summaryCell(h, i, { header: true })),
+        }),
+        ...lines.map(
+          (b, idx) =>
+            new TableRow({
+              cantSplit: true,
+              children: [b.label, b.total, b.checkedOut, b.stillInside, b.withVehicle].map((v, i) =>
+                summaryCell(String(v), i, { shade: idx % 2 === 1, bold: b.bold })
+              ),
+            })
+        ),
+      ],
+    }),
+    new Paragraph({
+      pageBreakBefore: true,
+      spacing: { after: 100 },
+      children: [new TextRun({ text: "Visitor log", bold: true, size: 24, color: NAVY })],
+    }),
+  ];
 }

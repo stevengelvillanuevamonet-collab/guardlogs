@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
-const [, , email, password] = process.argv;
+const [, , email, password, ...nameParts] = process.argv;
+const fullName = nameParts.join(" ").trim();
 
 if (!email || !password) {
   console.error(
-    'Usage: node --env-file=.env.local scripts/create-guard.mjs <email> <password>'
+    'Usage: node --env-file=.env.local scripts/create-guard.mjs <email> <password> ["Full Name"]'
   );
   process.exit(1);
 }
@@ -26,7 +27,9 @@ const supabase = createClient(url, serviceRoleKey, {
 const { data, error } = await supabase.auth.admin.createUser({
   email,
   password,
-  email_confirm: true, 
+  email_confirm: true,
+  app_metadata: { role: "guard" },
+  user_metadata: fullName ? { full_name: fullName } : undefined,
 });
 
 if (error) {

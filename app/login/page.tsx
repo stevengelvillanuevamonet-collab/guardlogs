@@ -16,8 +16,8 @@ const highlights = [
   },
   {
     icon: FileText,
-    title: "Daily reports",
-    body: "Export the day's log to Excel or Word when your shift ends.",
+    title: "Daily, monthly & yearly reports",
+    body: "Export any period's log to Excel or Word, ready to print and sign.",
   },
 ];
 
@@ -35,7 +35,13 @@ function Brand({ className }: { className?: string }) {
   );
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notice?: string }>;
+}) {
+  const { notice } = await searchParams;
+
   return (
     <main className="relative isolate min-h-dvh overflow-hidden bg-primary text-primary-foreground">
       {/* Campus photo, slowly drifting */}
@@ -57,6 +63,11 @@ export default function LoginPage() {
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-20 bg-gradient-to-t from-primary/70 via-transparent to-primary/40"
+      />
+      {/* Soft spotlight behind the sign-in panel so the glass has something to refract */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-32 right-[-10%] -z-10 h-[40rem] w-[40rem] rounded-full bg-accent/[0.14] blur-[130px] lg:right-[4%]"
       />
       <div
         aria-hidden="true"
@@ -127,7 +138,7 @@ export default function LoginPage() {
               className="anim-fade-up"
               style={{ "--d": "200ms" } as React.CSSProperties}
             >
-              <LoginForm />
+              <LoginForm notice={notice} />
             </div>
           </div>
         </section>
