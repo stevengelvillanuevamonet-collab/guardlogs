@@ -31,6 +31,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// Displays a small avatar for each visitor and opens a modal when the guard clicks
+// it. If no photo exists, a generic user icon is shown instead.
 function IdPhotoThumbnail({ visitor }: { visitor: VisitorLog }) {
   const [open, setOpen] = useState(false);
 
@@ -71,11 +73,15 @@ function IdPhotoThumbnail({ visitor }: { visitor: VisitorLog }) {
   );
 }
 
+// Presents the live list of people currently inside campus and lets the guard check
+// them out with one button press.
 export function ActiveVisitorsTable({
   initialVisitors,
 }: {
   initialVisitors: VisitorLog[];
 }) {
+  // Local state mirrors the server-fetched data so the UI can update immediately
+  // after a successful check-out without waiting for a page refresh.
   const [visitors, setVisitors] = useState(initialVisitors);
   const [, forceTick] = useState(0);
   const [isPending, startTransition] = useTransition();
@@ -90,6 +96,8 @@ export function ActiveVisitorsTable({
     return () => clearInterval(t);
   }, []);
 
+  // Trigger the server action, optimistically remove the visitor from the list on
+  // success, and surface a toast if the action fails.
   function handleCheckOut(log: VisitorLog) {
     setPendingId(log.id);
     startTransition(async () => {
@@ -107,6 +115,8 @@ export function ActiveVisitorsTable({
     });
   }
 
+  // The table is rendered as a dashboard card. When no visitors are inside, it
+  // shows an empty-state message instead of a blank list.
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">

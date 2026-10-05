@@ -4,9 +4,13 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "./supabase/server";
 import type { CheckInInput, VisitorLog } from "./types";
 
+// Photos are stored in a private Supabase bucket so the app can display them
+// without exposing the whole storage folder to the public internet.
 const ID_PHOTO_BUCKET = "visitor-ids";
-const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300; 
+const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300;
 
+// Every server action in this file must be guarded by an authenticated user.
+// This central check prevents anonymous visitors from creating or changing logs.
 async function requireGuard() {
   const supabase = await createServerSupabaseClient();
   const {
@@ -18,10 +22,9 @@ async function requireGuard() {
   return { supabase, user };
 }
 
-/**
- * Diri e upload ang surrendered ID photo to the private "visitor-ids" bucket and
- * returns its storage path (not a URL — the bucket has no public access).
- */
+// Upload the surrendered ID photo to the private storage bucket and keep only
+// the file path in the database. This avoids storing raw image data in the
+// database and keeps the bucket locked down behind signed URLs.
 async function uploadIdPhoto(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   guardId: string,
@@ -40,6 +43,8 @@ async function uploadIdPhoto(
 }
 
 
+// Convert uploaded storage paths into temporary signed URLs that are valid for a
+// short time. The UI can preview them, but the bucket itself stays private.
 async function withSignedPhotoUrls(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   logs: VisitorLog[]
@@ -64,10 +69,13 @@ async function withSignedPhotoUrls(
   }));
 }
 
-/** Check a visitor in. Logs time_in with the server's clock at the moment of the request. */
+// Creates a new visitor log entry. We validate the required fields on the server,
+// so the database still gets clean data even if the browser sends malformed input.
 export async function checkInVisitor(input: CheckInInput) {
   const { supabase, user } = await requireGuard();
 
+  // Normalise free-text fields before saving so accidental extra spaces do not
+  // create inconsistent records or display glitches.
   const visitor_name = input.visitor_name?.trim();
   const host_name = input.host_name?.trim();
   const purpose = input.purpose?.trim();
@@ -77,6 +85,8 @@ export async function checkInVisitor(input: CheckInInput) {
     throw new Error("Visitor name, host, and purpose are required.");
   }
 
+  // Upload the optional ID photo before inserting the log row. If a photo was
+  // provided, the database stores the object path and the UI fetches a signed URL.
   let id_photo_path: string | null = null;
   if (input.id_photo && input.id_photo.size > 0) {
     id_photo_path = await uploadIdPhoto(supabase, user.id, input.id_photo);
@@ -95,10 +105,12 @@ export async function checkInVisitor(input: CheckInInput) {
 
   if (error) throw new Error(error.message);
 
+  // Tell Next.js to refresh any page that depends on the home dashboard data.
   revalidatePath("/");
 }
 
-/** Check a visitor out. Stamps time_out with the current server time. */
+// Marks a currently checked-in visitor as having left campus. This writes the
+// server timestamp at the moment the action runs and blocks duplicate check-outs.
 export async function checkOutVisitor(logId: string) {
   const { supabase, user } = await requireGuard();
 
@@ -110,14 +122,16 @@ export async function checkOutVisitor(logId: string) {
       checked_out_by: user.id,
     })
     .eq("id", logId)
-    .eq("status", "Inside Campus"); // guard against double checkout races
+    .eq("status", "Inside Campus"); // Prevents a race where the same visitor gets checked out twice.
 
   if (error) throw new Error(error.message);
 
+  // Refresh the page so the visitor disappears from the "Inside Campus" view.
   revalidatePath("/");
 }
 
-/** All visitors currently inside campus, most recent first, with signed ID photo URLs attached. */
+// Returns the currently inside visitors in reverse chronological order so the most
+// recent entries appear at the top of the guard desk dashboard.
 export async function getActiveVisitors(): Promise<VisitorLog[]> {
   const { supabase } = await requireGuard();
   const { data, error } = await supabase
@@ -130,7 +144,8 @@ export async function getActiveVisitors(): Promise<VisitorLog[]> {
   return withSignedPhotoUrls(supabase, data ?? []);
 }
 
-/** Full log history (inside + checked out), most recent first, capped for the UI. */
+// Fetches recent visitor history for the activity panel. It includes both active and
+// checked-out records, and it limits the result count to keep the UI responsive.
 export async function getRecentLogs(limit = 50): Promise<VisitorLog[]> {
   const { supabase } = await requireGuard();
   const { data, error } = await supabase
