@@ -1,6 +1,7 @@
 import type { VisitorLog } from "@/lib/types";
 import { formatDateAndTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { LiveRefresh } from "@/components/live-refresh";
 import {
   Table,
   TableBody,
@@ -20,9 +21,14 @@ import {
 export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent activity</CardTitle>
-        <CardDescription>Last {logs.length} entries, most recent first.</CardDescription>
+      <CardHeader className="flex flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center">
+        <div className="min-w-0">
+          <CardTitle>Recent activity</CardTitle>
+          <CardDescription className="mt-1.5">
+            Last {logs.length} entries, most recent first. Updates automatically.
+          </CardDescription>
+        </div>
+        <LiveRefresh />
       </CardHeader>
       <CardContent>
         {/* Phones: compact list */}

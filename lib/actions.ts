@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "./supabase/server";
 import type { CheckInInput, VisitorLog } from "./types";
+import { VISIT_DESTINATIONS, VISIT_PURPOSES } from "./visit-options";
 
 // Photos are stored in a private Supabase bucket so the app can display them
 // without exposing the whole storage folder to the public internet.
@@ -82,7 +83,16 @@ export async function checkInVisitor(input: CheckInInput) {
   const plate_number = input.plate_number?.trim() || null;
 
   if (!visitor_name || !host_name || !purpose) {
-    throw new Error("Visitor name, host, and purpose are required.");
+    throw new Error("Visitor name, where they're visiting, and purpose are required.");
+  }
+
+  // Destination and purpose are dropdowns in the UI; enforce the same lists here
+  // so a tampered request can't save anything else.
+  if (!(VISIT_DESTINATIONS as readonly string[]).includes(host_name)) {
+    throw new Error("Choose a valid place to visit.");
+  }
+  if (!(VISIT_PURPOSES as readonly string[]).includes(purpose)) {
+    throw new Error("Choose a valid purpose of visit.");
   }
 
   // Upload the optional ID photo before inserting the log row. If a photo was

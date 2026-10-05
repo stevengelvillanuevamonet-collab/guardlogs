@@ -1,11 +1,15 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getRole, homeFor, isDisabled } from "@/lib/roles";
 
 /**
- * Refreshes the Supabase session cookie on every request and redirects
- * signed-out guards to /login (and signed-in guards away from /login).
- * This is the manual-account version of the app: there is no sign-up route,
- * so the only way in is a login the admin has already created for you.
+ * Refreshes the Supabase session cookie on every request and enforces who can
+ * see what:
+ *   - signed-out visitors can only reach /login and the public /apply form
+ *   - /admin/** is for admins only; guards are sent back to the guard desk
+ *   - accounts an admin has deactivated are signed out immediately
+ * There is still no public sign-up: guard accounts are only created by an
+ * admin (directly, or by approving an application).
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -35,18 +39,38 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginRoute = request.nextUrl.pathname.startsWith("/login");
+  const path = request.nextUrl.pathname;
+  const isLoginRoute = path.startsWith("/login");
+  const isApplyRoute = path === "/apply" || path.startsWith("/apply/");
+  const isPublicRoute = isLoginRoute || isApplyRoute;
 
-  if (!user && !isLoginRoute) {
+  // Redirect, but keep any session cookies Supabase just refreshed or cleared.
+  const redirectTo = (pathname: string, search = "") => {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    url.pathname = pathname;
+    url.search = search;
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  };
+
+  if (!user) {
+    return isPublicRoute ? response : redirectTo("/login");
   }
 
-  if (user && isLoginRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+  if (isDisabled(user)) {
+    await supabase.auth.signOut();
+    return redirectTo("/login", "?notice=disabled");
+  }
+
+  const role = getRole(user);
+
+  if (isLoginRoute) {
+    return redirectTo(homeFor(role));
+  }
+
+  if ((path === "/admin" || path.startsWith("/admin/")) && role !== "admin") {
+    return redirectTo("/");
   }
 
   return response;

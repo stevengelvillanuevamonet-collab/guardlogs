@@ -6,8 +6,8 @@ import { checkInVisitor } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { IdPhotoUpload } from "@/components/id-photo-upload";
+import { VISIT_DESTINATIONS, VISIT_PURPOSES } from "@/lib/visit-options";
 import {
   Card,
   CardContent,
@@ -15,6 +15,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+// Native <select>: opens the platform's own picker on phones and tablets, which
+// is faster at the guard desk than a custom dropdown.
+const selectClass =
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 invalid:text-muted-foreground";
 
 export function CheckInForm() {
   const [isPending, startTransition] = useTransition();
@@ -33,7 +38,7 @@ export function CheckInForm() {
     const plate_number = String(data.get("plate_number") || "");
 
     if (!visitor_name.trim() || !host_name.trim() || !purpose.trim()) {
-      toast.error("Visitor name, host, and purpose are required.");
+      toast.error("Visitor name, where they're visiting, and purpose are required.");
       return;
     }
 
@@ -98,25 +103,43 @@ export function CheckInForm() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="host_name">Visiting who</Label>
-            <Input
+            <Label htmlFor="host_name">Visiting where</Label>
+            <select
               id="host_name"
               name="host_name"
-              placeholder="CB Registrar"
-              autoComplete="off"
+              defaultValue=""
               required
-            />
+              className={selectClass}
+            >
+              <option value="" disabled>
+                Select a place…
+              </option>
+              {VISIT_DESTINATIONS.map((place) => (
+                <option key={place} value={place} className="text-foreground">
+                  {place}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="purpose">Purpose of visit</Label>
-            <Textarea
+            <select
               id="purpose"
               name="purpose"
-              placeholder="Delivery, guest, contractor, meeting..."
-              rows={3}
+              defaultValue=""
               required
-            />
+              className={selectClass}
+            >
+              <option value="" disabled>
+                Select a purpose…
+              </option>
+              {VISIT_PURPOSES.map((purpose) => (
+                <option key={purpose} value={purpose} className="text-foreground">
+                  {purpose}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
