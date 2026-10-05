@@ -107,3 +107,48 @@
     display: table-header-group;
   }
 }
+
+/* ---------- Login screen motion ---------- */
+@keyframes kenburns {
+  from { transform: scale(1.05) translate3d(0, 0, 0); }
+  to   { transform: scale(1.16) translate3d(-1.5%, -1%, 0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes rule-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(30px, 24px, 0); }
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-20deg); }
+  60%, 100% { transform: translateX(260%) skewX(-20deg); }
+}
+
+.anim-kenburns { animation: kenburns 28s ease-in-out infinite alternate; }
+.anim-fade-up  { opacity: 0; animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; animation-delay: var(--d, 0ms); }
+.anim-rule     { transform-origin: left; animation: rule-grow 1s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-drift    { animation: drift 14s ease-in-out infinite; }
+
+/* Light sweep across the primary button */
+.btn-sheen { position: relative; overflow: hidden; }
+.btn-sheen::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.35), transparent);
+  animation: sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-kenburns, .anim-drift, .btn-sheen::after { animation: none; }
+  .anim-fade-up, .anim-rule { animation: none; opacity: 1; transform: none; }
+}
