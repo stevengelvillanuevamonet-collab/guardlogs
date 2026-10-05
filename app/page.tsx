@@ -19,15 +19,15 @@ export default async function GuardhousePage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh overflow-x-hidden bg-background">
       <AppHeader email={user?.email} active="dashboard" />
 
-      <main className="container grid gap-6 py-8 lg:grid-cols-[380px_1fr]">
-        <div className="lg:sticky lg:top-8 lg:self-start">
+      <main className="container grid grid-cols-1 gap-4 py-5 sm:gap-6 sm:py-8 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="min-w-0 lg:sticky lg:top-8 lg:self-start">
           <CheckInForm />
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid min-w-0 gap-4 sm:gap-6">
           <ActiveVisitorsTable initialVisitors={activeVisitors} />
           <RecentLogTable logs={recentLogs} />
         </div>

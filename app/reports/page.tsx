@@ -25,13 +25,13 @@ export default async function ReportsPage({
   const { stats } = report;
 
   return (
-    <div className="min-h-screen bg-background print:bg-white">
+    <div className="min-h-dvh overflow-x-hidden bg-background print:bg-white">
       <AppHeader email={user?.email} active="reports" />
 
-      <main className="container grid gap-6 py-8 print:p-0">
+      <main className="container grid grid-cols-1 gap-4 py-5 sm:gap-6 sm:py-8 print:p-0">
         <ReportToolbar date={date} today={today} />
 
-        <article className="rounded-lg border bg-card p-8 shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <article className="min-w-0 rounded-lg border bg-card p-4 shadow-sm sm:p-8 print:rounded-none print:border-0 print:p-0 print:shadow-none">
           <header className="border-b pb-4">
             <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
               EGardMo — Guardhouse Visitor Check-in &amp; ID Register
@@ -98,7 +98,7 @@ export default async function ReportsPage({
             </div>
           )}
 
-          <div className="mt-12 grid grid-cols-2 gap-16 print:break-inside-avoid">
+          <div className="mt-10 grid grid-cols-1 gap-8 sm:mt-12 sm:grid-cols-2 sm:gap-16 print:grid-cols-2 print:break-inside-avoid">
             {["Prepared by (Guard on duty)", "Noted by (Security head)"].map((label) => (
               <div key={label}>
                 <div className="h-10 border-b border-foreground/60" />

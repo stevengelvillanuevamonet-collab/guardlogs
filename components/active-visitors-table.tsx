@@ -119,8 +119,8 @@ export function ActiveVisitorsTable({
   // shows an empty-state message instead of a blank list.
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
+      <CardHeader className="flex flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center">
+        <div className="min-w-0">
           <CardTitle>Inside Campus</CardTitle>
           <CardDescription>
             IDs currently held at the counter — click Check Out to return one.
@@ -139,6 +139,49 @@ export function ActiveVisitorsTable({
             </p>
           </div>
         ) : (
+          <>
+          {/* Phones: one card per visitor, no sideways scrolling */}
+          <ul className="grid gap-3 md:hidden">
+            {visitors.map((v) => (
+              <li key={v.id} className="rounded-lg border bg-background p-3.5">
+                <div className="flex items-center gap-3">
+                  <IdPhotoThumbnail visitor={v} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{v.visitor_name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Visiting {v.host_name}
+                      {v.plate_number ? ` · ${v.plate_number}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono-tabular text-sm font-medium">
+                      {formatTimeOfDay(v.time_in)}
+                    </p>
+                    <p className="font-mono-tabular text-xs text-muted-foreground">
+                      {formatDistanceToNowStrict(new Date(v.time_in))}
+                    </p>
+                  </div>
+                </div>
+                {v.purpose && (
+                  <p className="mt-2.5 line-clamp-2 text-sm text-muted-foreground">
+                    {v.purpose}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3 w-full"
+                  disabled={isPending && pendingId === v.id}
+                  onClick={() => handleCheckOut(v)}
+                >
+                  {isPending && pendingId === v.id ? "Checking out..." : "Check Out"}
+                </Button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Tablet and up: full table */}
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -186,6 +229,8 @@ export function ActiveVisitorsTable({
               ))}
             </TableBody>
           </Table>
+          </div>
+          </>
         )}
       </CardContent>
     </Card>

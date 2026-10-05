@@ -116,9 +116,9 @@ export function CameraCapture({ open, onOpenChange, onCapture, onUnavailable }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>Take a photo of the ID</DialogTitle>
+          <DialogTitle>Take a photo of the person holding the ID</DialogTitle>
           <DialogDescription>
-            Hold the ID flat inside the frame so the name and photo are readable.
+            Stay steady inside the frame so the person and their ID are clearly visible.
           </DialogDescription>
         </DialogHeader>
 

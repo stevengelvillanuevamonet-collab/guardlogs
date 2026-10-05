@@ -25,6 +25,26 @@ export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
         <CardDescription>Last {logs.length} entries, most recent first.</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Phones: compact list */}
+        <ul className="divide-y rounded-lg border md:hidden">
+          {logs.map((v) => (
+            <li key={v.id} className="flex flex-col gap-1.5 p-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="min-w-0 truncate font-medium">{v.visitor_name}</p>
+                <Badge variant={v.status === "Inside Campus" ? "inside" : "out"} dot className="shrink-0">
+                  {v.status}
+                </Badge>
+              </div>
+              <p className="font-mono-tabular text-xs text-muted-foreground">
+                {formatDateAndTime(v.time_in)}
+                {" → "}
+                {v.time_out ? formatDateAndTime(v.time_out) : "still inside"}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -53,6 +73,7 @@ export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardContent>
     </Card>
   );

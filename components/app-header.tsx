@@ -21,15 +21,15 @@ export function AppHeader({
 
   return (
     <header className="relative bg-primary text-primary-foreground print:hidden">
-      <div className="container flex h-20 items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md border border-accent/40 bg-accent/15">
+      <div className="container flex min-h-[4.25rem] items-center justify-between gap-3 py-3 sm:h-20 sm:py-0">
+        <div className="flex min-w-0 items-center gap-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent/40 bg-accent/15">
               <LogoMark className="h-5 w-5" />
             </div>
-            <div className="leading-tight">
+            <div className="min-w-0 leading-tight">
               <p className="font-serif text-lg font-semibold tracking-tight">EGardMo</p>
-              <p className="text-xs uppercase tracking-[0.14em] text-primary-foreground/60">
+              <p className="truncate text-[10px] uppercase tracking-[0.12em] text-primary-foreground/60 sm:text-xs sm:tracking-[0.14em]">
                 Visitor Check-in &amp; ID Register
               </p>
             </div>
@@ -43,13 +43,13 @@ export function AppHeader({
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-4">
           <span className="hidden text-sm text-primary-foreground/70 md:inline">{email}</span>
           <SignOutButton />
         </div>
       </div>
       {/* Mobile nav */}
-      <nav className="container flex items-center gap-1 pb-3 sm:hidden">
+      <nav className="container flex items-center gap-1 overflow-x-auto pb-3 sm:hidden">
         <Link href="/" className={link(active === "dashboard")}>
           <LayoutDashboard className="h-4 w-4" /> Dashboard
         </Link>
