@@ -42,15 +42,21 @@ export function CheckInForm() {
       return;
     }
 
+    // Send everything as FormData so the photo File uploads reliably.
+    const payload = new FormData();
+    payload.set("visitor_name", visitor_name);
+    payload.set("host_name", host_name);
+    payload.set("purpose", purpose);
+    payload.set("plate_number", plate_number);
+    if (idPhoto) payload.set("id_photo", idPhoto);
+
     startTransition(async () => {
       try {
-        await checkInVisitor({
-          visitor_name,
-          host_name,
-          purpose,
-          plate_number,
-          id_photo: idPhoto,
-        });
+        const result = await checkInVisitor(payload);
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
         toast.success(`${visitor_name} checked in.`, {
           description: "Hold their ID at the counter until check-out.",
         });
@@ -58,7 +64,8 @@ export function CheckInForm() {
         setPlateWarning(false);
         setIdPhoto(null);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Check-in failed.");
+        console.error(err);
+        toast.error("Check-in failed. The photo may be too large or the connection dropped — try again.");
       }
     });
   }

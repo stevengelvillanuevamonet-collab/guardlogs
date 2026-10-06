@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "./supabase/server";
-import type { CheckInInput, VisitorLog } from "./types";
+import type { VisitorLog } from "./types";
 import { VISIT_DESTINATIONS, VISIT_PURPOSES } from "./visit-options";
 
 // Photos are stored in a private Supabase bucket so the app can display them
@@ -72,51 +72,64 @@ async function withSignedPhotoUrls(
 
 // Creates a new visitor log entry. We validate the required fields on the server,
 // so the database still gets clean data even if the browser sends malformed input.
-export async function checkInVisitor(input: CheckInInput) {
-  const { supabase, user } = await requireGuard();
+//
+// Takes FormData (the reliable way to ship a File to a server action) and returns
+// a result object instead of throwing: in production Next.js replaces any thrown
+// error message with a generic one, so the guard would never see what went wrong.
+export async function checkInVisitor(
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { supabase, user } = await requireGuard();
 
-  // Normalise free-text fields before saving so accidental extra spaces do not
-  // create inconsistent records or display glitches.
-  const visitor_name = input.visitor_name?.trim();
-  const host_name = input.host_name?.trim();
-  const purpose = input.purpose?.trim();
-  const plate_number = input.plate_number?.trim() || null;
+    // Normalise free-text fields before saving so accidental extra spaces do not
+    // create inconsistent records or display glitches.
+    const visitor_name = String(formData.get("visitor_name") ?? "").trim();
+    const host_name = String(formData.get("host_name") ?? "").trim();
+    const purpose = String(formData.get("purpose") ?? "").trim();
+    const plate_number = String(formData.get("plate_number") ?? "").trim() || null;
+    const photo = formData.get("id_photo");
 
-  if (!visitor_name || !host_name || !purpose) {
-    throw new Error("Visitor name, where they're visiting, and purpose are required.");
+    if (!visitor_name || !host_name || !purpose) {
+      return { ok: false, error: "Visitor name, where they're visiting, and purpose are required." };
+    }
+
+    // Destination and purpose are dropdowns in the UI; enforce the same lists here
+    // so a tampered request can't save anything else.
+    if (!(VISIT_DESTINATIONS as readonly string[]).includes(host_name)) {
+      return { ok: false, error: "Choose a valid place to visit." };
+    }
+    if (!(VISIT_PURPOSES as readonly string[]).includes(purpose)) {
+      return { ok: false, error: "Choose a valid purpose of visit." };
+    }
+
+    // Upload the optional ID photo before inserting the log row. If a photo was
+    // provided, the database stores the object path and the UI fetches a signed URL.
+    let id_photo_path: string | null = null;
+    if (photo instanceof File && photo.size > 0) {
+      id_photo_path = await uploadIdPhoto(supabase, user.id, photo);
+    }
+
+    const { error } = await supabase.from("visitor_logs").insert({
+      visitor_name,
+      plate_number,
+      host_name,
+      purpose,
+      status: "Inside Campus",
+      time_in: new Date().toISOString(),
+      logged_by: user.id,
+      id_photo_path,
+    });
+
+    if (error) return { ok: false, error: error.message };
+  } catch (err) {
+    console.error("checkInVisitor failed:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Check-in failed." };
   }
-
-  // Destination and purpose are dropdowns in the UI; enforce the same lists here
-  // so a tampered request can't save anything else.
-  if (!(VISIT_DESTINATIONS as readonly string[]).includes(host_name)) {
-    throw new Error("Choose a valid place to visit.");
-  }
-  if (!(VISIT_PURPOSES as readonly string[]).includes(purpose)) {
-    throw new Error("Choose a valid purpose of visit.");
-  }
-
-  // Upload the optional ID photo before inserting the log row. If a photo was
-  // provided, the database stores the object path and the UI fetches a signed URL.
-  let id_photo_path: string | null = null;
-  if (input.id_photo && input.id_photo.size > 0) {
-    id_photo_path = await uploadIdPhoto(supabase, user.id, input.id_photo);
-  }
-
-  const { error } = await supabase.from("visitor_logs").insert({
-    visitor_name,
-    plate_number,
-    host_name,
-    purpose,
-    status: "Inside Campus",
-    time_in: new Date().toISOString(),
-    logged_by: user.id,
-    id_photo_path,
-  });
-
-  if (error) throw new Error(error.message);
 
   // Tell Next.js to refresh any page that depends on the home dashboard data.
   revalidatePath("/");
+  return { ok: true };
 }
 
 // Marks a currently checked-in visitor as having left campus. This writes the
