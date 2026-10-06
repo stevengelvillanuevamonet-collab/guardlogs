@@ -98,7 +98,7 @@ export default async function LoginPage({
                 className="anim-fade-up max-w-md text-[15px] leading-relaxed text-primary-foreground/70"
                 style={{ "--d": "280ms" } as React.CSSProperties}
               >
-                The digital logbook for your guardhouse. Check visitors in,
+                The digital logbook for your security. Check visitors in,
                 track surrendered IDs, and keep a clean record of every entry.
               </p>
             </div>
