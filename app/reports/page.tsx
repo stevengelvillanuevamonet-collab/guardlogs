@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { getReport, parsePeriod } from "@/lib/reports";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { ReportToolbar } from "@/components/report-toolbar";
 import { ReportDocument } from "@/components/report-document";
 import { isValidDateString, todayInCampus } from "@/lib/utils";
@@ -23,13 +23,11 @@ export default async function ReportsPage({
   const report = await getReport(period, date);
 
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background print:bg-white">
-      <AppHeader email={session?.user.email} role={session?.role} active="reports" />
-
+    <AppShell email={session?.user.email} role={session?.role}>
       <main className="container grid grid-cols-1 gap-4 py-5 sm:gap-6 sm:py-8 print:p-0">
         <ReportToolbar period={period} date={date} today={today} />
         <ReportDocument report={report} />
       </main>
-    </div>
+    </AppShell>
   );
 }

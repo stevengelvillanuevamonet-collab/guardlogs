@@ -41,6 +41,14 @@
     --signal-in-bg: 152 32% 94%;
     --signal-out: 215 12% 40%;
     --signal-out-bg: 215 12% 94%;
+
+    /* Sidebar — deep ink with a brass accent */
+    --sidebar-background: 222 46% 9%;
+    --sidebar-foreground: 210 22% 94%;
+    --sidebar-muted: 215 16% 58%;
+    --sidebar-accent: 222 34% 16%;
+    --sidebar-border: 222 28% 17%;
+    --sidebar-ring: 38 62% 52%;
   }
 }
 
@@ -89,6 +97,13 @@
     hsl(var(--accent) / 0.25) 60%,
     transparent
   );
+}
+
+/* Sidebar surface: ink navy with a faint brass glow at the top corner */
+.sidebar-surface {
+  background:
+    radial-gradient(120% 45% at 0% 0%, hsl(var(--accent) / 0.12), transparent 60%),
+    hsl(var(--sidebar-background));
 }
 
 /* Printing the daily report: A4 landscape, keep colours on table headers */
