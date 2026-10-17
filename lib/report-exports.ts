@@ -39,6 +39,10 @@ function summaryLine(r: Report) {
   return `Total visitors: ${total}   |   Checked out: ${checkedOut}   |   Still inside: ${stillInside}   |   With vehicle: ${withVehicle}`;
 }
 
+function purposeLine(r: Report) {
+  return `Purpose of visit:   ${r.purposeBreakdown.map((p) => `${p.label}: ${p.count}`).join("   |   ")}`;
+}
+
 /* ───────────────────────── Excel ───────────────────────── */
 
 export async function buildXlsx(report: Report): Promise<Buffer> {
@@ -81,6 +85,7 @@ function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
   merged(2, ORG_LINE, { name: "Calibri", size: 10, color: { argb: "FF6B7280" } });
   merged(3, report.label, { name: "Calibri", size: 13, bold: true }, 22);
   merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
+  merged(5, purposeLine(report), { name: "Calibri", size: 10 }, 20);
 
   const headerRowIndex = 6;
   const headerRow = ws.getRow(headerRowIndex);
@@ -165,6 +170,7 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
   merged(2, ORG_LINE, { name: "Calibri", size: 10, color: { argb: "FF6B7280" } });
   merged(3, report.label, { name: "Calibri", size: 13, bold: true }, 22);
   merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
+  merged(5, purposeLine(report), { name: "Calibri", size: 10 }, 20);
 
   const headerRowIndex = 6;
   const headerRow = ws.getRow(headerRowIndex);
@@ -387,6 +393,10 @@ export async function buildDocx(report: Report): Promise<Buffer> {
           new Paragraph({
             spacing: { after: 200 },
             children: [new TextRun({ text: summaryLine(report), size: 20 })],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [new TextRun({ text: purposeLine(report), size: 20 })],
           }),
           ...summarySection(report),
           new Table({

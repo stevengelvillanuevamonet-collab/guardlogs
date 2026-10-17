@@ -5,8 +5,15 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "./auth";
 import { createAdminSupabaseClient, createServerSupabaseClient } from "./supabase/server";
 import { campusDayRange, isValidDateString, shiftDate, todayInCampus } from "./utils";
+import {
+  APPLICATION_DOCUMENT_TYPES,
+  MAX_DOCUMENTS,
+  checkDocumentFile,
+  fileExtension,
+} from "./application-documents";
 import type {
   AdminVisitorLog,
+  ApplicationDocument,
   ApplicationStatus,
   GuardApplication,
   GuardProfile,
@@ -17,6 +24,8 @@ import type {
 import { VISITOR_LOG_PAGE_SIZE } from "./types";
 
 const ID_PHOTO_BUCKET = "visitor-ids";
+const APPLICATION_DOC_BUCKET = "application-documents";
+const APPLICATION_DOC_URL_TTL_SECONDS = 600;
 const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -215,33 +224,46 @@ export async function resetGuardPassword(guardId: string): Promise<IssuedCredent
 
 /* ───────────────────────── applications ───────────────────────── */
 
-export interface ApplicationInput {
-  full_name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  years_experience: number;
-  license_no?: string;
-  shift_preference: ShiftPreference;
-  about?: string;
-  /** Honeypot: real people leave this empty. */
-  website?: string;
+const DOCUMENT_MIME: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+};
+
+// The extension is user-controlled, so also check the file's first bytes match
+// what the extension claims (cheap protection against renamed executables).
+async function looksLikeDeclaredType(file: File, ext: string): Promise<boolean> {
+  const b = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const starts = (...sig: number[]) => sig.every((v, i) => b[i] === v);
+  if (ext === "pdf") return starts(0x25, 0x50, 0x44, 0x46); // %PDF
+  if (ext === "png") return starts(0x89, 0x50, 0x4e, 0x47);
+  if (ext === "jpg" || ext === "jpeg") return starts(0xff, 0xd8, 0xff);
+  if (ext === "docx") return starts(0x50, 0x4b); // zip container
+  if (ext === "doc") return starts(0xd0, 0xcf, 0x11, 0xe0); // legacy OLE
+  return false;
 }
 
 /**
  * PUBLIC action — applicants aren't signed in. It validates everything on the
- * server and inserts with the service role key, so there is no anonymous write
- * policy on the table.
+ * server and writes with the service role key, so there is no anonymous write
+ * policy on the table or the storage bucket.
+ *
+ * Takes FormData: the application fields, plus parallel `documents` (files) and
+ * `document_types` (the dropdown choice for each file) entries.
  */
-export async function submitGuardApplication(input: ApplicationInput): Promise<void> {
+export async function submitGuardApplication(formData: FormData): Promise<void> {
   // Bots fill hidden fields; pretend it worked and drop the submission.
-  if (input.website) return;
+  if (String(formData.get("website") ?? "")) return;
 
-  const full_name = input.full_name?.trim();
-  const email = input.email?.trim().toLowerCase();
-  const phone = input.phone?.trim();
-  const years = Number(input.years_experience);
-  const shift = input.shift_preference;
+  const text = (key: string) => String(formData.get(key) ?? "");
+  const full_name = text("full_name").trim();
+  const email = text("email").trim().toLowerCase();
+  const phone = text("phone").trim();
+  const years = Number(text("years_experience") || 0);
+  const shift = text("shift_preference") as ShiftPreference;
 
   if (!full_name || full_name.length < 2 || full_name.length > 120) throw new Error("Enter your full name.");
   if (!email || email.length > 160 || !EMAIL_RE.test(email)) throw new Error("Enter a valid email address.");
@@ -249,24 +271,103 @@ export async function submitGuardApplication(input: ApplicationInput): Promise<v
   if (!Number.isFinite(years) || years < 0 || years > 60) throw new Error("Years of experience must be between 0 and 60.");
   if (!["Day", "Night", "Any"].includes(shift)) throw new Error("Choose a shift preference.");
 
-  const admin = createAdminSupabaseClient();
-  const { error } = await admin.from("guard_applications").insert({
-    full_name,
-    email,
-    phone,
-    address: input.address?.trim().slice(0, 300) || null,
-    years_experience: Math.floor(years),
-    license_no: input.license_no?.trim().slice(0, 60) || null,
-    shift_preference: shift,
-    about: input.about?.trim().slice(0, 1500) || null,
-  });
+  // Validate every document before touching the database.
+  const files = formData.getAll("documents").filter((f): f is File => f instanceof File && f.size > 0);
+  const types = formData.getAll("document_types").map(String);
+  if (files.length !== types.length) throw new Error("Choose a document type for each file.");
+  if (files.length > MAX_DOCUMENTS) throw new Error(`You can attach up to ${MAX_DOCUMENTS} documents.`);
+  for (let i = 0; i < files.length; i++) {
+    if (!(APPLICATION_DOCUMENT_TYPES as readonly string[]).includes(types[i])) {
+      throw new Error("Choose a valid document type.");
+    }
+    const problem = checkDocumentFile(files[i]);
+    if (problem) throw new Error(problem);
+    if (!(await looksLikeDeclaredType(files[i], fileExtension(files[i].name)))) {
+      throw new Error(`"${files[i].name}" doesn't look like a valid ${fileExtension(files[i].name).toUpperCase()} file.`);
+    }
+  }
 
-  if (error) {
-    if (error.code === "23505") {
+  const admin = createAdminSupabaseClient();
+  const { data: created, error } = await admin
+    .from("guard_applications")
+    .insert({
+      full_name,
+      email,
+      phone,
+      address: text("address").trim().slice(0, 300) || null,
+      years_experience: Math.floor(years),
+      license_no: text("license_no").trim().slice(0, 60) || null,
+      shift_preference: shift,
+      about: text("about").trim().slice(0, 1500) || null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !created) {
+    if (error?.code === "23505") {
       throw new Error("An application for this email is already waiting for review.");
     }
     throw new Error("We couldn't submit your application. Please try again.");
   }
+  if (files.length === 0) return;
+
+  // Upload the files, then record them. If anything fails, undo the whole
+  // submission so the applicant can retry without hitting the one-per-email rule.
+  const uploaded: string[] = [];
+  try {
+    const rows = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = fileExtension(file.name);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+      const path = `${created.id}/${crypto.randomUUID()}-${safeName}`;
+
+      const { error: uploadError } = await admin.storage
+        .from(APPLICATION_DOC_BUCKET)
+        .upload(path, file, { contentType: DOCUMENT_MIME[ext], upsert: false });
+      if (uploadError) throw new Error(uploadError.message);
+      uploaded.push(path);
+
+      rows.push({
+        application_id: created.id,
+        doc_type: types[i],
+        file_name: file.name.slice(0, 200),
+        storage_path: path,
+        mime_type: DOCUMENT_MIME[ext],
+        size_bytes: file.size,
+      });
+    }
+    const { error: rowError } = await admin.from("application_documents").insert(rows);
+    if (rowError) throw new Error(rowError.message);
+  } catch (err) {
+    console.error("submitGuardApplication document upload failed:", err);
+    if (uploaded.length > 0) await admin.storage.from(APPLICATION_DOC_BUCKET).remove(uploaded);
+    await admin.from("guard_applications").delete().eq("id", created.id);
+    throw new Error("We couldn't upload your documents. Please try again.");
+  }
+}
+
+/** Admin: the documents an applicant attached, with short-lived view links. */
+export async function getApplicationDocuments(applicationId: string): Promise<ApplicationDocument[]> {
+  await requireAdmin();
+  const admin = createAdminSupabaseClient();
+
+  const { data, error } = await admin
+    .from("application_documents")
+    .select("*")
+    .eq("application_id", applicationId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+
+  const docs = (data ?? []) as ApplicationDocument[];
+  if (docs.length === 0) return docs;
+
+  const { data: signed } = await admin.storage
+    .from(APPLICATION_DOC_BUCKET)
+    .createSignedUrls(docs.map((d) => d.storage_path), APPLICATION_DOC_URL_TTL_SECONDS);
+  const urlByPath = new Map((signed ?? []).map((e) => [e.path, e.signedUrl]));
+
+  return docs.map((d) => ({ ...d, signed_url: urlByPath.get(d.storage_path) ?? null }));
 }
 
 export async function listApplications(status?: ApplicationStatus): Promise<GuardApplication[]> {

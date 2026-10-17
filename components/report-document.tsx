@@ -34,6 +34,20 @@ export function ReportDocument({ report }: { report: Report }) {
         ))}
       </dl>
 
+      <section className="border-b py-4 print:break-inside-avoid" aria-label="Purpose of visit">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Purpose of visit
+        </h2>
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {report.purposeBreakdown.map((p) => (
+            <div key={p.label}>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">{p.label}</dt>
+              <dd className="font-mono-tabular text-2xl font-semibold">{p.count}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
       {report.breakdown.length > 0 && (
         <section className="border-b py-4 print:break-inside-avoid">
           <h2 className="mb-3 font-serif text-lg font-semibold">{report.breakdownTitle}</h2>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Loader2, X } from "lucide-react";
-import { approveApplication, rejectApplication } from "@/lib/admin-actions";
-import type { ApplicationStatus, GuardApplication, IssuedCredentials } from "@/lib/types";
+import { Check, ExternalLink, FileText, Loader2, X } from "lucide-react";
+import { approveApplication, getApplicationDocuments, rejectApplication } from "@/lib/admin-actions";
+import { formatFileSize } from "@/lib/application-documents";
+import type { ApplicationDocument, ApplicationStatus, GuardApplication, IssuedCredentials } from "@/lib/types";
 import { cn, formatDateAndTime } from "@/lib/utils";
 import { CredentialsDialog } from "@/components/admin/credentials-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,23 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
   const [credentials, setCredentials] = useState<IssuedCredentials | null>(null);
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<"approve" | "reject" | null>(null);
+  const [docs, setDocs] = useState<ApplicationDocument[] | null>(null);
+  const [docsError, setDocsError] = useState(false);
+
+  // Load the applicant's documents whenever a different application is opened.
+  const selectedId = selected?.id;
+  useEffect(() => {
+    setDocs(null);
+    setDocsError(false);
+    if (!selectedId) return;
+    let cancelled = false;
+    getApplicationDocuments(selectedId)
+      .then((d) => !cancelled && setDocs(d))
+      .catch(() => !cancelled && setDocsError(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
 
   const counts = {
     pending: applications.filter((a) => a.status === "pending").length,
@@ -188,6 +206,46 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
                   <Detail label="About the applicant" value={selected.about} />
                 </div>
               </dl>
+
+              <div className="grid gap-2 border-t pt-4">
+                <p className="text-xs text-muted-foreground">Submitted documents</p>
+                {docsError ? (
+                  <p className="text-sm text-destructive">Couldn&apos;t load the documents. Close and reopen to retry.</p>
+                ) : docs === null ? (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                  </p>
+                ) : docs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No documents were attached.</p>
+                ) : (
+                  <ul className="grid gap-2">
+                    {docs.map((d) => (
+                      <li key={d.id} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+                        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{d.doc_type}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {d.file_name}
+                            {d.size_bytes ? ` · ${formatFileSize(d.size_bytes)}` : ""}
+                          </p>
+                        </div>
+                        {d.signed_url ? (
+                          <a
+                            href={d.signed_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-accent underline-offset-4 hover:underline"
+                          >
+                            Open <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Unavailable</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               {selected.status === "pending" ? (
                 <div className="grid gap-4 border-t pt-4">

@@ -1,14 +1,31 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { CheckCircle2, FileText, Loader2, Paperclip, X } from "lucide-react";
 import { submitGuardApplication } from "@/lib/admin-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ShiftPreference } from "@/lib/types";
+import {
+  APPLICATION_DOCUMENT_TYPES,
+  DOCUMENT_ACCEPT,
+  MAX_DOCUMENTS,
+  MAX_DOCUMENT_BYTES,
+  checkDocumentFile,
+  formatFileSize,
+  type ApplicationDocumentType,
+} from "@/lib/application-documents";
+
+interface PendingDocument {
+  key: string;
+  type: ApplicationDocumentType;
+  file: File;
+}
+
+const selectClass =
+  "flex h-11 w-full rounded-md border border-border/70 bg-secondary/40 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30";
 
 const fieldClass = "h-11 border-border/70 bg-secondary/40 focus-visible:ring-accent/30 focus-visible:ring-offset-0";
 
@@ -16,6 +33,33 @@ export function ApplyForm() {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [submittedName, setSubmittedName] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<PendingDocument[]>([]);
+  const [docType, setDocType] = useState<ApplicationDocumentType>(APPLICATION_DOCUMENT_TYPES[0]);
+  const [docError, setDocError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function addDocument(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow picking the same file again later
+    if (!file) return;
+
+    if (documents.length >= MAX_DOCUMENTS) {
+      setDocError(`You can attach up to ${MAX_DOCUMENTS} documents.`);
+      return;
+    }
+    const problem = checkDocumentFile(file);
+    if (problem) {
+      setDocError(problem);
+      return;
+    }
+    setDocError(null);
+    setDocuments((prev) => [...prev, { key: crypto.randomUUID(), type: docType, file }]);
+  }
+
+  function removeDocument(key: string) {
+    setDocuments((prev) => prev.filter((d) => d.key !== key));
+    setDocError(null);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,17 +69,26 @@ export function ApplyForm() {
 
     startTransition(async () => {
       try {
-        await submitGuardApplication({
-          full_name,
-          email: String(data.get("email") || ""),
-          phone: String(data.get("phone") || ""),
-          address: String(data.get("address") || ""),
-          years_experience: Number(data.get("years_experience") || 0),
-          license_no: String(data.get("license_no") || ""),
-          shift_preference: String(data.get("shift_preference") || "Any") as ShiftPreference,
-          about: String(data.get("about") || ""),
-          website: String(data.get("website") || ""),
-        });
+        // FormData carries the files; each file is paired with its dropdown choice.
+        const payload = new FormData();
+        for (const key of [
+          "full_name",
+          "email",
+          "phone",
+          "address",
+          "years_experience",
+          "license_no",
+          "shift_preference",
+          "about",
+          "website",
+        ]) {
+          payload.set(key, String(data.get(key) ?? ""));
+        }
+        for (const d of documents) {
+          payload.append("documents", d.file);
+          payload.append("document_types", d.type);
+        }
+        await submitGuardApplication(payload);
         setSubmittedName(full_name.trim().split(" ")[0] || "there");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -124,6 +177,87 @@ export function ApplyForm() {
           Tell us about your experience <span className="text-muted-foreground">(optional)</span>
         </Label>
         <Textarea id="about" name="about" rows={4} maxLength={1500} className="border-border/70 bg-secondary/40 focus-visible:ring-accent/30 focus-visible:ring-offset-0" />
+      </div>
+
+      <div className="grid gap-3 rounded-lg border border-border/70 bg-secondary/20 p-4">
+        <div>
+          <p className="text-sm font-medium">
+            Supporting documents <span className="font-normal text-muted-foreground">(optional)</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Pick the kind of document, then choose the file. PDF, Word, JPG or PNG, up to{" "}
+            {MAX_DOCUMENT_BYTES / 1024 / 1024} MB each (max {MAX_DOCUMENTS}).
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="document_type">Document type</Label>
+            <select
+              id="document_type"
+              value={docType}
+              onChange={(e) => setDocType(e.target.value as ApplicationDocumentType)}
+              className={selectClass}
+            >
+              {APPLICATION_DOCUMENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11"
+            disabled={documents.length >= MAX_DOCUMENTS}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4" /> Choose file
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={DOCUMENT_ACCEPT}
+            onChange={addDocument}
+            className="sr-only"
+            tabIndex={-1}
+            aria-label="Choose a document file"
+          />
+        </div>
+
+        {docError && (
+          <p className="text-sm text-destructive" role="alert">
+            {docError}
+          </p>
+        )}
+
+        {documents.length > 0 && (
+          <ul className="grid gap-2">
+            {documents.map((d) => (
+              <li
+                key={d.key}
+                className="flex items-center gap-3 rounded-md border bg-card px-3 py-2 text-sm"
+              >
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{d.type}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {d.file.name} · {formatFileSize(d.file.size)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeDocument(d.key)}
+                  aria-label={`Remove ${d.file.name}`}
+                  className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <Button type="submit" variant="accent" size="lg" disabled={isPending} className="h-12 text-[15px] font-semibold">

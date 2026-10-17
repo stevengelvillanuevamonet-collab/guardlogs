@@ -47,6 +47,18 @@ export interface GuardApplication {
   created_at: string;
 }
 
+export interface ApplicationDocument {
+  id: string;
+  application_id: string;
+  doc_type: string;
+  file_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+  signed_url?: string | null; // attached at fetch time, expires — never stored
+}
+
 export interface GuardProfile {
   id: string;
   email: string | null;

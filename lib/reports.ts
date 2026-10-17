@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "./supabase/server";
+import { VISIT_PURPOSES } from "./visit-options";
 import type { VisitorLog } from "./types";
 import {
   campusDateOf,
@@ -48,6 +49,12 @@ export interface BreakdownRow {
   withVehicle: number;
 }
 
+/** How many visits in the period were for each purpose (from the guard desk dropdown). */
+export interface PurposeCount {
+  label: string;
+  count: number;
+}
+
 export interface Report {
   period: ReportPeriod;
   anchor: string; // YYYY-MM-DD — any date inside the reported period
@@ -62,6 +69,8 @@ export interface Report {
     checkedOut: number;
     withVehicle: number;
   };
+  /** One entry per guard-desk purpose, in dropdown order — zeros included. */
+  purposeBreakdown: PurposeCount[];
   /** Empty for daily reports. */
   breakdownTitle: string;
   breakdown: BreakdownRow[];
@@ -172,6 +181,7 @@ export async function getReport(period: ReportPeriod, anchor: string): Promise<R
       checkedOut: rows.length - stillInside,
       withVehicle: logs.filter((l) => !!l.plate_number).length,
     },
+    purposeBreakdown: buildPurposeBreakdown(logs),
     breakdownTitle:
       period === "monthly" ? "Visitors per day" : period === "yearly" ? "Visitors per month" : "",
     breakdown: buildBreakdown(period, anchor, logs),
@@ -181,6 +191,22 @@ export async function getReport(period: ReportPeriod, anchor: string): Promise<R
 /** Back-compat wrapper for the original daily-only API. */
 export function getDailyReport(date: string): Promise<Report> {
   return getReport("daily", date);
+}
+
+// Counts visits per purpose. Every dropdown option is listed (even at zero) so
+// the panel looks the same on a quiet day; older free-text purposes that no
+// longer match an option are grouped under "Other" so the counts add up.
+function buildPurposeBreakdown(logs: VisitorLog[]): PurposeCount[] {
+  const counts = new Map<string, number>(VISIT_PURPOSES.map((p) => [p, 0]));
+  let other = 0;
+  for (const log of logs) {
+    const key = (VISIT_PURPOSES as readonly string[]).includes(log.purpose) ? log.purpose : null;
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    else other += 1;
+  }
+  const result: PurposeCount[] = Array.from(counts, ([label, count]) => ({ label, count }));
+  if (other > 0) result.push({ label: "Other", count: other });
+  return result;
 }
 
 function buildBreakdown(period: ReportPeriod, anchor: string, logs: VisitorLog[]): BreakdownRow[] {
