@@ -174,7 +174,7 @@ export function ApplyForm() {
 
       <div className="grid gap-2">
         <Label htmlFor="about">
-          Tell us about your experience <span className="text-muted-foreground">(optional)</span>
+          Tell us about your experience <span className="text-muted-foreground">(mandatory)</span>
         </Label>
         <Textarea id="about" name="about" rows={4} maxLength={1500} className="border-border/70 bg-secondary/40 focus-visible:ring-accent/30 focus-visible:ring-offset-0" />
       </div>
@@ -182,7 +182,7 @@ export function ApplyForm() {
       <div className="grid gap-3 rounded-lg border border-border/70 bg-secondary/20 p-4">
         <div>
           <p className="text-sm font-medium">
-            Supporting documents <span className="font-normal text-muted-foreground">(optional)</span>
+            Supporting documents <span className="font-normal text-muted-foreground">(mandatory)</span>
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Pick the kind of document, then choose the file. PDF, Word, JPG or PNG, up to{" "}
