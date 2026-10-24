@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// ID photo thumbnail that opens a larger preview.
 function Photo({ log }: { log: AdminVisitorLog }) {
   const [open, setOpen] = useState(false);
 
@@ -41,7 +42,9 @@ function Photo({ log }: { log: AdminVisitorLog }) {
   );
 }
 
+// Visitor logs as cards on phones and a table on larger screens.
 export function LogsTable({ logs }: { logs: AdminVisitorLog[] }) {
+  // Status badge shared by both layouts.
   const badge = (l: AdminVisitorLog) => (
     <Badge variant={l.status === "Inside Campus" ? "inside" : "out"} dot className="shrink-0">
       {l.status}

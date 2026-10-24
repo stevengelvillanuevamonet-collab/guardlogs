@@ -23,6 +23,7 @@ import type {
 } from "./types";
 import { VISITOR_LOG_PAGE_SIZE } from "./types";
 
+// Storage buckets, signed-URL lifetimes and the email check.
 const ID_PHOTO_BUCKET = "visitor-ids";
 const APPLICATION_DOC_BUCKET = "application-documents";
 const APPLICATION_DOC_URL_TTL_SECONDS = 600;
@@ -55,6 +56,7 @@ async function provisionGuardAccount(input: {
   phone?: string | null;
   password?: string;
 }): Promise<IssuedCredentials & { userId: string }> {
+  // Create the auth user (service role).
   const admin = createAdminSupabaseClient();
   const password = input.password || generatePassword();
 
@@ -66,6 +68,7 @@ async function provisionGuardAccount(input: {
     user_metadata: { full_name: input.full_name },
   });
 
+  // Translate duplicate-email errors into a friendly message.
   if (error || !data.user) {
     const msg = error?.message ?? "Could not create the account.";
     throw new Error(
@@ -96,6 +99,7 @@ async function provisionGuardAccount(input: {
 
 /* ───────────────────────── overview ───────────────────────── */
 
+// Counts and recent items for the admin dashboard.
 export interface AdminOverview {
   insideNow: number;
   visitorsToday: number;
@@ -105,11 +109,13 @@ export interface AdminOverview {
   recentLogs: AdminVisitorLog[];
 }
 
+// Admin dashboard data: counts, pending applications and latest visitors.
 export async function getAdminOverview(): Promise<AdminOverview> {
   await requireAdmin();
   const supabase = await createServerSupabaseClient();
   const { start, end } = campusDayRange(todayInCampus());
 
+  // Run all queries in parallel.
   const [inside, today, guards, pending, recentApps, recentLogs] = await Promise.all([
     supabase.from("visitor_logs").select("id", { count: "exact", head: true }).eq("status", "Inside Campus"),
     supabase
@@ -132,6 +138,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     supabase.from("visitor_logs").select("*").order("time_in", { ascending: false }).limit(6),
   ]);
 
+  // Surface the first query error, if any.
   const firstError = [inside, today, guards, pending, recentApps, recentLogs].find((r) => r.error)?.error;
   if (firstError) throw new Error(firstError.message);
 
@@ -147,6 +154,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
 
 /* ───────────────────────── guards ───────────────────────── */
 
+// All profiles, admins first, newest within each role.
 export async function listGuards(): Promise<GuardProfile[]> {
   await requireAdmin();
   const supabase = await createServerSupabaseClient();
@@ -160,6 +168,7 @@ export async function listGuards(): Promise<GuardProfile[]> {
   return (data ?? []) as GuardProfile[];
 }
 
+// Admin: validate input and create a new guard account.
 export async function addGuard(input: {
   full_name: string;
   email: string;
@@ -167,6 +176,7 @@ export async function addGuard(input: {
 }): Promise<IssuedCredentials> {
   await requireAdmin();
 
+  // Normalize and validate.
   const full_name = input.full_name?.trim();
   const email = input.email?.trim().toLowerCase();
   const phone = input.phone?.trim() || null;
@@ -180,6 +190,7 @@ export async function addGuard(input: {
   return credentials;
 }
 
+// Admin: switch a guard account on or off (never your own).
 export async function setGuardActive(guardId: string, active: boolean) {
   const { user } = await requireAdmin();
   if (guardId === user.id) throw new Error("You can't deactivate your own account.");
@@ -203,6 +214,7 @@ export async function setGuardActive(guardId: string, active: boolean) {
   revalidatePath("/admin");
 }
 
+// Admin: issue a new temporary password for a guard.
 export async function resetGuardPassword(guardId: string): Promise<IssuedCredentials> {
   await requireAdmin();
   const admin = createAdminSupabaseClient();
@@ -224,6 +236,7 @@ export async function resetGuardPassword(guardId: string): Promise<IssuedCredent
 
 /* ───────────────────────── applications ───────────────────────── */
 
+// Content types for allowed document extensions.
 const DOCUMENT_MIME: Record<string, string> = {
   pdf: "application/pdf",
   doc: "application/msword",
@@ -258,6 +271,7 @@ export async function submitGuardApplication(formData: FormData): Promise<void> 
   // Bots fill hidden fields; pretend it worked and drop the submission.
   if (String(formData.get("website") ?? "")) return;
 
+  // Read and normalize the text fields.
   const text = (key: string) => String(formData.get(key) ?? "");
   const full_name = text("full_name").trim();
   const email = text("email").trim().toLowerCase();
@@ -265,6 +279,7 @@ export async function submitGuardApplication(formData: FormData): Promise<void> 
   const years = Number(text("years_experience") || 0);
   const shift = text("shift_preference") as ShiftPreference;
 
+  // Field validation.
   if (!full_name || full_name.length < 2 || full_name.length > 120) throw new Error("Enter your full name.");
   if (!email || email.length > 160 || !EMAIL_RE.test(email)) throw new Error("Enter a valid email address.");
   if (!phone || phone.length < 7 || phone.length > 30) throw new Error("Enter a valid phone number.");
@@ -287,6 +302,7 @@ export async function submitGuardApplication(formData: FormData): Promise<void> 
     }
   }
 
+  // Save the application row.
   const admin = createAdminSupabaseClient();
   const { data: created, error } = await admin
     .from("guard_applications")
@@ -303,6 +319,7 @@ export async function submitGuardApplication(formData: FormData): Promise<void> 
     .select("id")
     .single();
 
+  // Friendly errors, including the duplicate-email case.
   if (error || !created) {
     if (error?.code === "23505") {
       throw new Error("An application for this email is already waiting for review.");
@@ -337,6 +354,7 @@ export async function submitGuardApplication(formData: FormData): Promise<void> 
         size_bytes: file.size,
       });
     }
+    // Record the uploaded files.
     const { error: rowError } = await admin.from("application_documents").insert(rows);
     if (rowError) throw new Error(rowError.message);
   } catch (err) {
@@ -359,6 +377,7 @@ export async function getApplicationDocuments(applicationId: string): Promise<Ap
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
 
+  // Attach short-lived signed URLs.
   const docs = (data ?? []) as ApplicationDocument[];
   if (docs.length === 0) return docs;
 
@@ -370,6 +389,7 @@ export async function getApplicationDocuments(applicationId: string): Promise<Ap
   return docs.map((d) => ({ ...d, signed_url: urlByPath.get(d.storage_path) ?? null }));
 }
 
+// Admin: recent applications, optionally filtered by status.
 export async function listApplications(status?: ApplicationStatus): Promise<GuardApplication[]> {
   await requireAdmin();
   const supabase = await createServerSupabaseClient();
@@ -410,6 +430,7 @@ export async function approveApplication(
   if (claimError) throw new Error(claimError.message);
   if (!claimed) throw new Error("This application was already reviewed.");
 
+  // Create the guard account and link it to the application.
   const app = claimed as GuardApplication;
   try {
     const { userId, ...credentials } = await provisionGuardAccount({
@@ -433,6 +454,7 @@ export async function approveApplication(
   }
 }
 
+// Admin: reject a pending application.
 export async function rejectApplication(applicationId: string, note?: string) {
   const { user } = await requireAdmin();
   const admin = createAdminSupabaseClient();
@@ -459,6 +481,7 @@ export async function rejectApplication(applicationId: string, note?: string) {
 
 /* ───────────────────────── visitor logs ───────────────────────── */
 
+// Admin log filters and a page of results.
 export interface VisitorLogFilters {
   q?: string;
   status?: "all" | "inside" | "out";
@@ -474,10 +497,12 @@ export interface VisitorLogPage {
   pageSize: number;
 }
 
+// Add guard names and signed ID-photo URLs to log rows.
 async function attachGuardNames(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   logs: VisitorLog[]
 ): Promise<AdminVisitorLog[]> {
+  // Look up names for every guard referenced.
   const ids = Array.from(
     new Set(logs.flatMap((l) => [l.logged_by, l.checked_out_by]).filter((id): id is string => !!id))
   );
@@ -498,6 +523,7 @@ async function attachGuardNames(
     for (const entry of data ?? []) if (entry.path && entry.signedUrl) urlByPath.set(entry.path, entry.signedUrl);
   }
 
+  // Merge names and photo URLs into each row.
   return logs.map((l) => ({
     ...l,
     id_photo_signed_url: l.id_photo_path ? urlByPath.get(l.id_photo_path) ?? null : null,
@@ -511,11 +537,13 @@ export async function getAdminVisitorLogs(filters: VisitorLogFilters = {}): Prom
   await requireAdmin();
   const supabase = await createServerSupabaseClient();
 
+  // Page offset.
   const page = Math.max(1, Math.floor(filters.page ?? 1));
   const from = (page - 1) * VISITOR_LOG_PAGE_SIZE;
 
   let query = supabase.from("visitor_logs").select("*", { count: "exact" });
 
+  // Apply search, status and date filters.
   const q = cleanSearch(filters.q ?? "");
   if (q) {
     query = query.or(`visitor_name.ilike.%${q}%,host_name.ilike.%${q}%,plate_number.ilike.%${q}%,purpose.ilike.%${q}%`);
@@ -530,6 +558,7 @@ export async function getAdminVisitorLogs(filters: VisitorLogFilters = {}): Prom
     query = query.lt("time_in", campusDayRange(shiftDate(filters.to, 1)).start);
   }
 
+  // Fetch the requested page, newest first.
   const { data, error, count } = await query
     .order("time_in", { ascending: false })
     .range(from, from + VISITOR_LOG_PAGE_SIZE - 1);

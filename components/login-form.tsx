@@ -23,10 +23,13 @@ import { Label } from "@/components/ui/label";
 const fieldClass =
   "login-field h-12 rounded-lg border-white/15 bg-white/[0.06] pl-11 text-[15px] text-white ring-offset-0 transition-colors placeholder:text-white/35 hover:border-white/25 hover:bg-white/[0.09] focus-visible:border-accent/70 focus-visible:bg-white/[0.09] focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:ring-offset-0";
 
+// Icon placement inside input fields.
 const iconClass =
   "pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40 transition-colors group-focus-within:text-accent";
 
+// Email/password sign-in form with error handling.
 export function LoginForm({ notice }: { notice?: string }) {
+  // Submit, password visibility and error state (seeded from the notice).
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +37,7 @@ export function LoginForm({ notice }: { notice?: string }) {
     notice === "disabled" ? "This account has been deactivated. Contact your administrator." : null
   );
 
+  // Validate input, sign in with Supabase, then redirect by role.
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -47,6 +51,7 @@ export function LoginForm({ notice }: { notice?: string }) {
       return;
     }
 
+    // Authenticate.
     setIsSubmitting(true);
     const supabase = createClient();
     const { data: signedIn, error: authError } = await supabase.auth.signInWithPassword({
@@ -83,6 +88,7 @@ export function LoginForm({ notice }: { notice?: string }) {
         <p className="mt-1.5 text-sm text-white/60">Sign in to open the guardhouse logbook.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4 sm:mt-8 sm:space-y-5" noValidate>
+          {/* Error banner */}
           {error && (
             <div
               role="alert"
@@ -96,6 +102,7 @@ export function LoginForm({ notice }: { notice?: string }) {
             </div>
           )}
 
+          {/* Email field */}
           <div className="grid gap-2">
             <Label htmlFor="email" className="text-[13px] font-medium text-white/80">
               Email address
@@ -116,6 +123,7 @@ export function LoginForm({ notice }: { notice?: string }) {
             </div>
           </div>
 
+          {/* Password field with show/hide toggle */}
           <div className="grid gap-2">
             <Label htmlFor="password" className="text-[13px] font-medium text-white/80">
               Password
@@ -145,6 +153,7 @@ export function LoginForm({ notice }: { notice?: string }) {
             </div>
           </div>
 
+          {/* Submit button */}
           <button
             type="submit"
             disabled={isSubmitting}
@@ -161,6 +170,7 @@ export function LoginForm({ notice }: { notice?: string }) {
           </button>
         </form>
 
+        {/* Footer: access notice and apply link */}
         <div className="mt-7 flex items-center gap-3 text-[11px] uppercase tracking-[0.14em] text-white/40">
           <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
           Restricted access

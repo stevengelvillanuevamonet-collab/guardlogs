@@ -15,11 +15,13 @@ export const APPLICATION_DOCUMENT_TYPES = [
 
 export type ApplicationDocumentType = (typeof APPLICATION_DOCUMENT_TYPES)[number];
 
+// Upload limits and accepted file types.
 export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024; // per file
 export const MAX_DOCUMENTS = 5; // per application
 export const ALLOWED_DOCUMENT_EXTENSIONS = ["pdf", "doc", "docx", "jpg", "jpeg", "png"] as const;
 export const DOCUMENT_ACCEPT = ALLOWED_DOCUMENT_EXTENSIONS.map((e) => `.${e}`).join(",");
 
+/** Lowercase extension without the dot, or "" if none. */
 export function fileExtension(name: string): string {
   const dot = name.lastIndexOf(".");
   return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
@@ -38,6 +40,7 @@ export function checkDocumentFile(file: { name: string; size: number }): string 
   return null;
 }
 
+/** Human-readable size in KB or MB. */
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;

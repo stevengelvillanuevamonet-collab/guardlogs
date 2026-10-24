@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
  * see the signed-in guard.
  */
 export async function createServerSupabaseClient() {
+  // Read/write the session via Next's cookie store.
   const cookieStore = await cookies();
 
   return createServerClient(

@@ -21,14 +21,17 @@ import {
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 invalid:text-muted-foreground";
 
+// Guard-desk form for logging a visitor in.
 export function CheckInForm() {
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const [plateWarning, setPlateWarning] = useState(false);
   const [idPhoto, setIdPhoto] = useState<File | null>(null);
 
+  // Validate, then submit the check-in.
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Read the field values.
     const form = e.currentTarget;
     const data = new FormData(form);
 
@@ -37,6 +40,7 @@ export function CheckInForm() {
     const purpose = String(data.get("purpose") || "");
     const plate_number = String(data.get("plate_number") || "");
 
+    // Required-field check.
     if (!visitor_name.trim() || !host_name.trim() || !purpose.trim()) {
       toast.error("Visitor name, where they're visiting, and purpose are required.");
       return;
@@ -50,6 +54,7 @@ export function CheckInForm() {
     payload.set("plate_number", plate_number);
     if (idPhoto) payload.set("id_photo", idPhoto);
 
+    // Call the server action and reset the form on success.
     startTransition(async () => {
       try {
         const result = await checkInVisitor(payload);
@@ -78,6 +83,7 @@ export function CheckInForm() {
           Log their details and surrender their ID at the counter.
         </CardDescription>
       </CardHeader>
+      {/* Form fields */}
       <CardContent>
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">

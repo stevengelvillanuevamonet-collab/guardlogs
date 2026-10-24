@@ -20,6 +20,7 @@ import {
 } from "docx";
 import type { Report } from "./reports";
 
+// Shared labels, brand color and log table headers.
 const ORG_LINE = "EGardMo — Guardhouse Visitor Check-in & ID Register";
 const NAVY = "141B2E";
 const HEADERS = [
@@ -34,17 +35,20 @@ const HEADERS = [
   "Status",
 ];
 
+// One-line totals shown under the title.
 function summaryLine(r: Report) {
   const { total, checkedOut, stillInside, withVehicle } = r.stats;
   return `Total visitors: ${total}   |   Checked out: ${checkedOut}   |   Still inside: ${stillInside}   |   With vehicle: ${withVehicle}`;
 }
 
+// One-line purpose-of-visit counts.
 function purposeLine(r: Report) {
   return `Purpose of visit:   ${r.purposeBreakdown.map((p) => `${p.label}: ${p.count}`).join("   |   ")}`;
 }
 
 /* ───────────────────────── Excel ───────────────────────── */
 
+// Build the Excel workbook (summary sheet for monthly/yearly, plus the log).
 export async function buildXlsx(report: Report): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "EGardMo";
@@ -57,6 +61,7 @@ export async function buildXlsx(report: Report): Promise<Buffer> {
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
+// Per-day or per-month summary sheet.
 function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
   const ws = wb.addWorksheet("Summary", {
     pageSetup: {
@@ -71,6 +76,7 @@ function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
       oddFooter: `&L&8Generated ${report.generatedAt}&C&8Page &P of &N&R&8${report.title}`,
     },
   });
+  // Column widths and the title block.
   ws.columns = [{ width: 24 }, { width: 14 }, { width: 14 }, { width: 14 }, { width: 14 }];
 
   const merged = (row: number, text: string, font: Partial<ExcelJS.Font>, height?: number) => {
@@ -87,6 +93,7 @@ function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
   merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
   merged(5, purposeLine(report), { name: "Calibri", size: 10 }, 20);
 
+  // Header row.
   const headerRowIndex = 6;
   const headerRow = ws.getRow(headerRowIndex);
   [report.period === "monthly" ? "Day" : "Month", "Visitors", "Checked out", "Still inside", "With vehicle"].forEach(
@@ -102,6 +109,7 @@ function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
 
   const thin = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
   const border = { top: thin, left: thin, bottom: thin, right: thin };
+  // Data rows plus a bold total row.
   const rows = [
     ...report.breakdown.map((b) => ({ ...b, bold: false })),
     {
@@ -129,6 +137,7 @@ function addSummarySheet(wb: ExcelJS.Workbook, report: Report) {
   ws.views = [{ state: "frozen", ySplit: headerRowIndex }];
 }
 
+// Main sheet listing every visitor, with a signature block.
 function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
   const ws = wb.addWorksheet("Visitor Log", {
     pageSetup: {
@@ -144,6 +153,7 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
     },
   });
 
+  // Column widths.
   ws.columns = [
     { width: 6 },
     { width: 28 },
@@ -166,12 +176,14 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
     if (height) ws.getRow(row).height = height;
   };
 
+  // Title block.
   merged(1, report.title, { name: "Calibri", size: 18, bold: true, color: { argb: `FF${NAVY}` } }, 28);
   merged(2, ORG_LINE, { name: "Calibri", size: 10, color: { argb: "FF6B7280" } });
   merged(3, report.label, { name: "Calibri", size: 13, bold: true }, 22);
   merged(4, summaryLine(report), { name: "Calibri", size: 10 }, 20);
   merged(5, purposeLine(report), { name: "Calibri", size: 10 }, 20);
 
+  // Header row.
   const headerRowIndex = 6;
   const headerRow = ws.getRow(headerRowIndex);
   HEADERS.forEach((h, i) => {
@@ -186,6 +198,7 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
   const thin = { style: "thin" as const, color: { argb: "FFD1D5DB" } };
   const border = { top: thin, left: thin, bottom: thin, right: thin };
 
+  // One row per visitor; still-inside status is highlighted.
   report.rows.forEach((r, idx) => {
     const row = ws.getRow(headerRowIndex + 1 + idx);
     [r.no, r.visitor, r.plate, r.host, r.purpose, r.timeIn, r.timeOut, r.duration, r.status].forEach(
@@ -205,6 +218,7 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
     if (r.inside) row.getCell(9).font = { name: "Calibri", size: 10.5, bold: true, color: { argb: "FF9A3412" } };
   });
 
+  // Empty message, or an autofilter when there are rows.
   if (report.rows.length === 0) {
     const row = headerRowIndex + 1;
     ws.mergeCells(row, 1, row, lastCol);
@@ -237,6 +251,7 @@ function addLogSheet(wb: ExcelJS.Workbook, report: Report) {
 
 /* ───────────────────────── Word ───────────────────────── */
 
+// Word table sizing and borders.
 // A4 landscape with 0.5" margins → content width in DXA (twentieths of a point)
 const COL_WIDTHS = [600, 2400, 1300, 2200, 3598, 1200, 1200, 1200, 1700];
 const TABLE_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0); // 15398
@@ -244,6 +259,7 @@ const TABLE_WIDTH = COL_WIDTHS.reduce((a, b) => a + b, 0); // 15398
 const cellBorder = { style: BorderStyle.SINGLE, size: 4, color: "D1D5DB" };
 const borders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
 
+// Log table cell with optional header, shading and bold styling.
 function textCell(text: string, i: number, opts: { header?: boolean; shade?: boolean; bold?: boolean } = {}) {
   return new TableCell({
     width: { size: COL_WIDTHS[i], type: WidthType.DXA },
@@ -272,7 +288,9 @@ function textCell(text: string, i: number, opts: { header?: boolean; shade?: boo
   });
 }
 
+// Build the Word document (summary, visitor table and signature lines).
 export async function buildDocx(report: Report): Promise<Buffer> {
+  // Table header row.
   const headerRow = new TableRow({
     tableHeader: true,
     cantSplit: true,
@@ -280,6 +298,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
     children: HEADERS.map((h, i) => textCell(h, i, { header: true })),
   });
 
+  // One row per visitor.
   const bodyRows = report.rows.map(
     (r, idx) =>
       new TableRow({
@@ -298,6 +317,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
       })
   );
 
+  // Placeholder row when there are no visitors.
   const emptyRow =
     report.rows.length === 0
       ? [
@@ -328,6 +348,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
         ]
       : [];
 
+  // Signature line cell and spacer cell.
   const sigLine = (label: string) =>
     new TableCell({
       width: { size: 5000, type: WidthType.DXA },
@@ -350,6 +371,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
     children: [new Paragraph("")],
   });
 
+  // Assemble the landscape A4 document.
   const doc = new Document({
     creator: "EGardMo",
     title: `${report.title} — ${report.label}`,
@@ -362,6 +384,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
             margin: { top: 720, right: 720, bottom: 720, left: 720 },
           },
         },
+        // Footer with generation time and page numbers.
         footers: {
           default: new Footer({
             children: [
@@ -377,6 +400,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
             ],
           }),
         },
+        // Title block, summary, tables and signatures.
         children: [
           new Paragraph({
             spacing: { after: 40 },
@@ -463,6 +487,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
     ],
   });
 
+  // Serialize to a buffer.
   return Buffer.from(await Packer.toBuffer(doc));
 }
 
@@ -470,6 +495,7 @@ export async function buildDocx(report: Report): Promise<Buffer> {
 
 const SUMMARY_WIDTHS = [5398, 2500, 2500, 2500, 2500]; // sums to TABLE_WIDTH
 
+// Summary table cell with header, total and zebra styling.
 function summaryCell(
   text: string,
   i: number,
@@ -504,6 +530,7 @@ function summaryCell(
   });
 }
 
+// Summary heading and table, followed by a page break before the log.
 function summarySection(report: Report): (Paragraph | Table)[] {
   if (report.breakdown.length === 0) return [];
 

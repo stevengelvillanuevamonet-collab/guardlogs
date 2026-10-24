@@ -18,18 +18,22 @@ import {
   type ApplicationDocumentType,
 } from "@/lib/application-documents";
 
+// A document waiting to be uploaded with the application.
 interface PendingDocument {
   key: string;
   type: ApplicationDocumentType;
   file: File;
 }
 
+// Shared field styles.
 const selectClass =
   "flex h-11 w-full rounded-md border border-border/70 bg-secondary/40 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30";
 
 const fieldClass = "h-11 border-border/70 bg-secondary/40 focus-visible:ring-accent/30 focus-visible:ring-offset-0";
 
+// Public guard application form with document attachments.
 export function ApplyForm() {
+  // Form, success and document state.
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [submittedName, setSubmittedName] = useState<string | null>(null);
@@ -38,6 +42,7 @@ export function ApplyForm() {
   const [docError, setDocError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Validate and queue a chosen document.
   function addDocument(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow picking the same file again later
@@ -56,11 +61,13 @@ export function ApplyForm() {
     setDocuments((prev) => [...prev, { key: crypto.randomUUID(), type: docType, file }]);
   }
 
+  // Remove a queued document.
   function removeDocument(key: string) {
     setDocuments((prev) => prev.filter((d) => d.key !== key));
     setDocError(null);
   }
 
+  // Build the payload and submit the application.
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -96,6 +103,7 @@ export function ApplyForm() {
     });
   }
 
+  // Confirmation screen after submitting.
   if (submittedName) {
     return (
       <div className="py-6 text-center" role="status">
@@ -111,6 +119,7 @@ export function ApplyForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+      {/* Error banner */}
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -123,6 +132,7 @@ export function ApplyForm() {
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
+      {/* Personal details */}
       <div className="grid gap-2">
         <Label htmlFor="full_name">Full name</Label>
         <Input id="full_name" name="full_name" required autoComplete="name" className={fieldClass} />
@@ -146,6 +156,7 @@ export function ApplyForm() {
         <Input id="address" name="address" autoComplete="street-address" className={fieldClass} />
       </div>
 
+      {/* Experience and shift */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="years_experience">Years of experience</Label>
@@ -179,6 +190,7 @@ export function ApplyForm() {
         <Textarea id="about" name="about" rows={4} maxLength={1500} className="border-border/70 bg-secondary/40 focus-visible:ring-accent/30 focus-visible:ring-offset-0" />
       </div>
 
+      {/* Document attachments */}
       <div className="grid gap-3 rounded-lg border border-border/70 bg-secondary/20 p-4">
         <div>
           <p className="text-sm font-medium">
@@ -232,6 +244,7 @@ export function ApplyForm() {
           </p>
         )}
 
+        {/* Attached files list */}
         {documents.length > 0 && (
           <ul className="grid gap-2">
             {documents.map((d) => (
@@ -260,6 +273,7 @@ export function ApplyForm() {
         )}
       </div>
 
+      {/* Submit */}
       <Button type="submit" variant="accent" size="lg" disabled={isPending} className="h-12 text-[15px] font-semibold">
         {isPending ? (
           <>

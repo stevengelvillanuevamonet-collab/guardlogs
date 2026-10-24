@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
+// Signs the user out via Supabase and returns to the login page.
 export function SignOutButton() {
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
+  // End the session, then redirect and refresh server data.
   async function handleSignOut() {
     setIsSigningOut(true);
     const supabase = createClient();

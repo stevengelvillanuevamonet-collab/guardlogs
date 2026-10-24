@@ -22,8 +22,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+// Role used for nav and labels.
 type Role = "admin" | "guard";
 
+// Logo and app name; text hides when the sidebar is collapsed.
 function Brand({ role }: { role: Role }) {
   const collapsed = useSidebar().state === "collapsed";
   return (
@@ -49,6 +51,7 @@ function Brand({ role }: { role: Role }) {
   );
 }
 
+// Signed-in user's avatar, email and role label.
 function UserCard({ email, role }: { email?: string | null; role: Role }) {
   const collapsed = useSidebar().state === "collapsed";
   const initial = (email?.trim()[0] ?? "?").toUpperCase();
@@ -70,6 +73,7 @@ function UserCard({ email, role }: { email?: string | null; role: Role }) {
   );
 }
 
+// Role-based sidebar with nav links, user card and sign-out.
 export function AppSidebar({
   email,
   role,
@@ -79,10 +83,12 @@ export function AppSidebar({
   role: Role;
   pendingApplications?: number;
 }) {
+  // Current path, router and sign-out state.
   const pathname = usePathname();
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
+  // End the session and return to login.
   async function handleSignOut() {
     setSigningOut(true);
     const supabase = createClient();
@@ -98,12 +104,14 @@ export function AppSidebar({
       </SidebarHeader>
       <div className="brass-rule h-px shrink-0" />
 
+      {/* Nav groups */}
       <SidebarContent>
         {navFor(role).map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarMenu>
               {group.items.map((item) => {
+                // Pending count only applies to the applications link.
                 const badge = item.href === "/admin/applications" ? pendingApplications : 0;
                 return (
                   <SidebarMenuItem key={`${group.label}-${item.href}`}>
@@ -126,6 +134,7 @@ export function AppSidebar({
         ))}
       </SidebarContent>
 
+      {/* User and sign-out */}
       <SidebarFooter>
         <UserCard email={email} role={role} />
         <SidebarMenu>

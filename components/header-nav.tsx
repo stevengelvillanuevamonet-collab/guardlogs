@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Nav item shape.
 type NavItem = {
   href: string;
   label: string;
@@ -21,11 +22,13 @@ type NavItem = {
   exact?: boolean;
 };
 
+// Links for guards.
 const GUARD_NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/reports", label: "Reports", icon: FileText },
 ];
 
+// Links for admins.
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Overview", icon: ShieldCheck, exact: true },
   { href: "/admin/applications", label: "Applications", icon: UserPlus },
@@ -35,6 +38,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/", label: "Guard desk", icon: ClipboardList, exact: true },
 ];
 
+// Header link row, shown in a desktop or mobile layout.
 export function HeaderNav({
   role,
   pendingApplications = 0,
@@ -44,6 +48,7 @@ export function HeaderNav({
   pendingApplications?: number;
   variant: "desktop" | "mobile";
 }) {
+  // Current path decides the active link.
   const pathname = usePathname();
   const items = role === "admin" ? ADMIN_NAV : GUARD_NAV;
 
@@ -58,6 +63,7 @@ export function HeaderNav({
       )}
     >
       {items.map(({ href, label, icon: Icon, exact }) => {
+        // Highlight the current page.
         const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -73,6 +79,7 @@ export function HeaderNav({
           >
             <Icon className="h-4 w-4" />
             {label}
+            {/* Pending-applications count */}
             {href === "/admin/applications" && pendingApplications > 0 && (
               <span className="ml-0.5 rounded-full bg-accent px-1.5 text-[11px] font-semibold leading-5 text-accent-foreground">
                 {pendingApplications}

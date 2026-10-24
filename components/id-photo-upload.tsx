@@ -9,17 +9,20 @@ import { CameraCapture } from "@/components/camera-capture";
 
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
 
+// Controlled file value and change callback.
 interface IdPhotoUploadProps {
   value: File | null;
   onChange: (file: File | null) => void;
 }
 
+// Returns an error message, or null if the file is a valid image under the size limit.
 function isAcceptableImage(file: File): string | null {
   if (!file.type.startsWith("image/")) return "Please choose an image file.";
   if (file.size > MAX_FILE_BYTES) return "Image is larger than 8MB — try a smaller photo.";
   return null;
 }
 
+// ID photo picker: camera, file upload, or drag-and-drop, with preview.
 export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null); // choose an existing file
   const nativeCameraRef = useRef<HTMLInputElement>(null); // phone camera fallback
@@ -38,6 +41,7 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
     return () => URL.revokeObjectURL(url);
   }, [value]);
 
+  // Validate a file, then pass it up.
   const acceptFile = useCallback(
     (file: File) => {
       const problem = isAcceptableImage(file);
@@ -50,6 +54,7 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
     [onChange]
   );
 
+  // Open the live camera, or fall back to the native picker.
   function openCamera() {
     // Live in-browser camera where supported (needs https or localhost);
     // otherwise fall back to the native capture input (opens the camera app on phones).
@@ -61,12 +66,14 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
     }
   }
 
+  // Handle a file chosen from either input.
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) acceptFile(file);
     e.target.value = ""; // allow re-selecting the same file later
   }
 
+  // Handle a file dropped onto the zone.
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDraggingOver(false);
@@ -93,6 +100,7 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
         className="hidden"
         onChange={handleInputChange}
       />
+      {/* Live camera dialog */}
       <CameraCapture
         open={cameraOpen}
         onOpenChange={setCameraOpen}
@@ -100,6 +108,7 @@ export function IdPhotoUpload({ value, onChange }: IdPhotoUploadProps) {
         onUnavailable={() => inputRef.current?.click()}
       />
 
+      {/* Preview with actions, or the empty drop zone */}
       {previewUrl ? (
         <div className="group relative overflow-hidden rounded-lg border shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}

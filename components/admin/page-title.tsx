@@ -1,3 +1,4 @@
+// Shared page heading with optional description and action slot.
 export function PageTitle({
   title,
   description,

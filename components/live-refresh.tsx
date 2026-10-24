@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
+// Connection state shown in the pill.
 type Status = "connecting" | "live" | "polling";
 
 // Safety net: if the realtime socket isn't connected (flaky tablet Wi-Fi, a
@@ -23,15 +24,18 @@ const DEBOUNCE_MS = 350;
  * guard names stay correct too. Renders a small "Live" pill.
  */
 export function LiveRefresh({ className }: { className?: string }) {
+  // Router, status state, debounce timer and a ref mirror of the status.
   const router = useRouter();
   const [status, setStatus] = useState<Status>("connecting");
   const [, startTransition] = useTransition();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef<Status>("connecting");
 
+  // Subscribe to realtime changes and set up polling fallback.
   useEffect(() => {
     const supabase = createClient();
 
+    // Refresh helpers: immediate, debounced, and status setter.
     const refresh = () => startTransition(() => router.refresh());
     const refreshSoon = () => {
       if (timer.current) clearTimeout(timer.current);
@@ -42,6 +46,7 @@ export function LiveRefresh({ className }: { className?: string }) {
       setStatus(next);
     };
 
+    // Realtime channel on visitor_logs.
     const channel = supabase
       .channel("visitor-logs-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "visitor_logs" }, refreshSoon)
@@ -65,10 +70,12 @@ export function LiveRefresh({ className }: { className?: string }) {
     };
     schedulePoll();
 
+    // Refresh when the tab returns or the network reconnects.
     const onVisible = () => document.visibilityState === "visible" && refresh();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", refresh);
 
+    // Cleanup on unmount.
     return () => {
       if (timer.current) clearTimeout(timer.current);
       clearTimeout(poll);
@@ -78,6 +85,7 @@ export function LiveRefresh({ className }: { className?: string }) {
     };
   }, [router]);
 
+  // Pill text for the current status.
   const label = status === "live" ? "Live" : status === "connecting" ? "Connecting…" : "Auto-refreshing";
 
   return (

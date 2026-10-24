@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+// Card listing the latest visitor log entries.
 export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
   return (
     <Card>
@@ -50,6 +51,7 @@ export function RecentLogTable({ logs }: { logs: VisitorLog[] }) {
           ))}
         </ul>
 
+        {/* Desktop: full table */}
         <div className="hidden md:block">
         <Table>
           <TableHeader>

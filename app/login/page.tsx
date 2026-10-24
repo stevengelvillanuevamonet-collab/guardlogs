@@ -3,6 +3,7 @@ import { ClipboardCheck, FileText, IdCard } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 import { LogoMark } from "@/components/logo-mark";
 
+// Feature bullets for the brand column.
 const highlights = [
   {
     icon: IdCard,
@@ -21,6 +22,7 @@ const highlights = [
   },
 ];
 
+// Logo and name lockup.
 function Brand({ className }: { className?: string }) {
   return (
     <div className={className}>
@@ -35,11 +37,13 @@ function Brand({ className }: { className?: string }) {
   );
 }
 
+// Sign-in page: brand panel beside the login form.
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ notice?: string }>;
 }) {
+  // Optional notice, e.g. account disabled.
   const { notice } = await searchParams;
 
   return (

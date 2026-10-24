@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+// Scrollable table wrapper.
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
@@ -15,6 +16,7 @@ const Table = React.forwardRef<
 ));
 Table.displayName = "Table";
 
+// Table head section.
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
@@ -23,6 +25,7 @@ const TableHeader = React.forwardRef<
 ));
 TableHeader.displayName = "TableHeader";
 
+// Table body section.
 const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
@@ -35,6 +38,7 @@ const TableBody = React.forwardRef<
 ));
 TableBody.displayName = "TableBody";
 
+// Table row with hover state.
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
@@ -50,6 +54,7 @@ const TableRow = React.forwardRef<
 ));
 TableRow.displayName = "TableRow";
 
+// Header cell.
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
@@ -65,6 +70,7 @@ const TableHead = React.forwardRef<
 ));
 TableHead.displayName = "TableHead";
 
+// Body cell.
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
@@ -77,6 +83,7 @@ const TableCell = React.forwardRef<
 ));
 TableCell.displayName = "TableCell";
 
+// Table caption.
 const TableCaption = React.forwardRef<
   HTMLTableCaptionElement,
   React.HTMLAttributes<HTMLTableCaptionElement>
@@ -89,6 +96,7 @@ const TableCaption = React.forwardRef<
 ));
 TableCaption.displayName = "TableCaption";
 
+// Public exports.
 export {
   Table,
   TableHeader,
@@ -100,6 +108,7 @@ export {
   TableCaption,
 };
 
+// Table footer section.
 const TableFooter = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>

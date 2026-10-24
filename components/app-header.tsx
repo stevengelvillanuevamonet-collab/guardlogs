@@ -17,6 +17,7 @@ async function countPendingApplications(): Promise<number> {
   }
 }
 
+// Top header with logo, nav, role badge and sign-out (legacy; sidebar shell replaces it).
 export async function AppHeader({
   email,
   role = "guard",
@@ -26,6 +27,7 @@ export async function AppHeader({
   /** @deprecated The active link is now detected from the URL. */
   active?: string;
 }) {
+  // Only admins see the pending-applications badge.
   const pending = role === "admin" ? await countPendingApplications() : 0;
 
   return (

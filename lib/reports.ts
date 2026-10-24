@@ -18,6 +18,7 @@ import {
   monthName,
 } from "./utils";
 
+// Supported report periods.
 export type ReportPeriod = "daily" | "monthly" | "yearly";
 
 export const REPORT_PERIODS: ReportPeriod[] = ["daily", "monthly", "yearly"];
@@ -27,6 +28,7 @@ export function parsePeriod(value: string | null | undefined): ReportPeriod {
   return value === "monthly" || value === "yearly" ? value : "daily";
 }
 
+// One visitor line in the report table.
 export interface ReportRow {
   no: number;
   visitor: string;
@@ -55,6 +57,7 @@ export interface PurposeCount {
   count: number;
 }
 
+// Full report payload used by the page and the exports.
 export interface Report {
   period: ReportPeriod;
   anchor: string; // YYYY-MM-DD — any date inside the reported period
@@ -79,27 +82,32 @@ export interface Report {
 /** Kept so existing imports of the old name keep working. */
 export type DailyReport = Report;
 
+// Paging limits for fetching rows.
 const PAGE_SIZE = 1000; // Supabase returns at most 1000 rows per request
 const MAX_ROWS = 50_000; // safety valve so a runaway range can't exhaust memory
 
+// Report title per period.
 const TITLES: Record<ReportPeriod, string> = {
   daily: "Daily Visitor Report",
   monthly: "Monthly Visitor Report",
   yearly: "Yearly Visitor Report",
 };
 
+// Start/end timestamps covering the period.
 function rangeFor(period: ReportPeriod, anchor: string) {
   if (period === "monthly") return campusMonthRange(anchor.slice(0, 7));
   if (period === "yearly") return campusYearRange(anchor.slice(0, 4));
   return campusDayRange(anchor);
 }
 
+// Human-readable period label.
 function labelFor(period: ReportPeriod, anchor: string) {
   if (period === "monthly") return formatMonthLabel(anchor.slice(0, 7));
   if (period === "yearly") return anchor.slice(0, 4);
   return formatReportDate(anchor);
 }
 
+// Filename-safe period slug.
 function slugFor(period: ReportPeriod, anchor: string) {
   if (period === "monthly") return anchor.slice(0, 7);
   if (period === "yearly") return anchor.slice(0, 4);
@@ -115,6 +123,7 @@ function slugFor(period: ReportPeriod, anchor: string) {
 export async function getReport(period: ReportPeriod, anchor: string): Promise<Report> {
   if (!isValidDateString(anchor)) throw new Error("Invalid date.");
 
+  // Require a signed-in user.
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -149,6 +158,7 @@ export async function getReport(period: ReportPeriod, anchor: string): Promise<R
     return period === "yearly" ? formatFullDateTime(iso) : formatDateAndTime(iso);
   };
 
+  // Shape logs into display rows.
   const rows: ReportRow[] = logs.map((log, i) => {
     const inside = log.status === "Inside Campus";
     return {
@@ -165,6 +175,7 @@ export async function getReport(period: ReportPeriod, anchor: string): Promise<R
     };
   });
 
+  // Totals for the summary, then assemble the report.
   const stillInside = rows.filter((r) => r.inside).length;
 
   return {
@@ -209,6 +220,7 @@ function buildPurposeBreakdown(logs: VisitorLog[]): PurposeCount[] {
   return result;
 }
 
+// Per-day (monthly) or per-month (yearly) counts; empty for daily reports.
 function buildBreakdown(period: ReportPeriod, anchor: string, logs: VisitorLog[]): BreakdownRow[] {
   if (period === "daily") return [];
 
@@ -228,6 +240,7 @@ function buildBreakdown(period: ReportPeriod, anchor: string, logs: VisitorLog[]
     }
   }
 
+  // Tally each log into its bucket.
   for (const log of logs) {
     const day = campusDateOf(log.time_in);
     const bucket = buckets.get(period === "monthly" ? day : day.slice(0, 7));

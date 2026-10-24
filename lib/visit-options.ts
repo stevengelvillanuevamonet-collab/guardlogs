@@ -5,6 +5,7 @@
  */
 export const VISIT_DESTINATIONS = ["CB", "CBE", "CBS", "GYMNASIUM"] as const;
 
+// Allowed visit purposes.
 export const VISIT_PURPOSES = [
   "To Pay",
   "To Submit File",
@@ -13,5 +14,6 @@ export const VISIT_PURPOSES = [
   "Meeting",
 ] as const;
 
+// Union types derived from the lists above.
 export type VisitDestination = (typeof VISIT_DESTINATIONS)[number];
 export type VisitPurpose = (typeof VISIT_PURPOSES)[number];

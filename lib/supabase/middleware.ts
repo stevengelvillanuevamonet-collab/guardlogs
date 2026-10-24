@@ -12,8 +12,10 @@ import { getRole, homeFor, isDisabled } from "@/lib/roles";
  * admin (directly, or by approving an application).
  */
 export async function updateSession(request: NextRequest) {
+  // Default pass-through response; cookies get attached below.
   let response = NextResponse.next({ request });
 
+  // Supabase client that syncs session cookies onto the request/response.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,10 +37,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // Validate the session with Supabase.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Classify the requested route.
   const path = request.nextUrl.pathname;
   const isLoginRoute = path.startsWith("/login");
   const isApplyRoute = path === "/apply" || path.startsWith("/apply/");
@@ -54,21 +58,25 @@ export async function updateSession(request: NextRequest) {
     return redirect;
   };
 
+  // Signed out: only public routes allowed.
   if (!user) {
     return isPublicRoute ? response : redirectTo("/login");
   }
 
+  // Deactivated account: sign out immediately.
   if (isDisabled(user)) {
     await supabase.auth.signOut();
     return redirectTo("/login", "?notice=disabled");
   }
 
+  // Signed-in users skip login and go home.
   const role = getRole(user);
 
   if (isLoginRoute) {
     return redirectTo(homeFor(role));
   }
 
+  // Keep non-admins out of /admin.
   if ((path === "/admin" || path.startsWith("/admin/")) && role !== "admin") {
     return redirectTo("/");
   }

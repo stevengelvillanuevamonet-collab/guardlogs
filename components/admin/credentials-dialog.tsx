@@ -27,8 +27,10 @@ export function CredentialsDialog({
   title?: string;
   onClose: () => void;
 }) {
+  // Tracks the brief "Copied" confirmation.
   const [copied, setCopied] = useState(false);
 
+  // Copy the login details to the clipboard.
   async function copy() {
     if (!credentials) return;
     const text = `EGardMo login\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
@@ -52,6 +54,7 @@ export function CredentialsDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Email and temporary password */}
         {credentials && (
           <dl className="grid gap-3 rounded-md border bg-secondary/40 p-4 text-sm">
             <div>
@@ -72,6 +75,7 @@ export function CredentialsDialog({
           This password is shown only once. If it's lost, use “Reset password” on the Guards page.
         </p>
 
+        {/* Actions */}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={onClose}>
             Done

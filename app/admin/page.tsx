@@ -10,9 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export const metadata = { title: "Admin — EGardMo" };
 
+// Admin dashboard: key counts plus recent applications and visitors.
 export default async function AdminOverviewPage() {
+  // Load overview data.
   const o = await getAdminOverview();
 
+  // Stat tiles with links to the related pages.
   const stats = [
     { label: "Inside campus now", value: o.insideNow, icon: DoorOpen, href: "/admin/logs?status=inside" },
     { label: "Visitors today", value: o.visitorsToday, icon: UserCheck, href: "/reports" },
@@ -34,6 +37,7 @@ export default async function AdminOverviewPage() {
         action={<LiveRefresh />}
       />
 
+      {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href, highlight }) => (
           <Link
@@ -51,7 +55,9 @@ export default async function AdminOverviewPage() {
         ))}
       </div>
 
+      {/* Recent activity cards */}
       <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
+        {/* Newest applications */}
         <Card>
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div>
@@ -88,6 +94,7 @@ export default async function AdminOverviewPage() {
           </CardContent>
         </Card>
 
+        {/* Latest visitor check-ins */}
         <Card>
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div>

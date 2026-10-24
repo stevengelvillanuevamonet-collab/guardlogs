@@ -7,9 +7,12 @@ import { AppShell } from "@/components/app-shell";
 
 export const dynamic = "force-dynamic";
 
+// Guard home: check-in form, active visitors and recent logs.
 export default async function GuardhousePage() {
+  // Current user for the shell header.
   const session = await getSessionUser();
 
+  // Load visitors and logs in parallel.
   const [activeVisitors, recentLogs] = await Promise.all([
     getActiveVisitors(),
     getRecentLogs(50),

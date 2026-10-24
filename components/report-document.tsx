@@ -6,12 +6,14 @@ import type { Report } from "@/lib/reports";
  * per-day / per-month summary ahead of it.
  */
 export function ReportDocument({ report }: { report: Report }) {
+  // Summary stats and period wording for the empty state.
   const { stats } = report;
   const periodWord =
     report.period === "daily" ? "on this date" : report.period === "monthly" ? "this month" : "this year";
 
   return (
     <article className="min-w-0 rounded-lg border bg-card p-4 shadow-sm sm:p-8 print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      {/* Title block */}
       <header className="border-b pb-4">
         <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
           EGardMo — Guardhouse Visitor Check-in &amp; ID Register
@@ -20,6 +22,7 @@ export function ReportDocument({ report }: { report: Report }) {
         <p className="text-base font-medium">{report.label}</p>
       </header>
 
+      {/* Headline totals */}
       <dl className="grid grid-cols-2 gap-4 border-b py-4 sm:grid-cols-4">
         {[
           ["Total visitors", stats.total],
@@ -34,6 +37,7 @@ export function ReportDocument({ report }: { report: Report }) {
         ))}
       </dl>
 
+      {/* Counts by purpose */}
       <section className="border-b py-4 print:break-inside-avoid" aria-label="Purpose of visit">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Purpose of visit
@@ -48,6 +52,7 @@ export function ReportDocument({ report }: { report: Report }) {
         </dl>
       </section>
 
+      {/* Per-day or per-month summary (monthly/yearly only) */}
       {report.breakdown.length > 0 && (
         <section className="border-b py-4 print:break-inside-avoid">
           <h2 className="mb-3 font-serif text-lg font-semibold">{report.breakdownTitle}</h2>
@@ -91,6 +96,7 @@ export function ReportDocument({ report }: { report: Report }) {
         </section>
       )}
 
+      {/* Visitor table, or an empty message */}
       {report.rows.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
           No visitors were logged {periodWord}.
@@ -136,6 +142,7 @@ export function ReportDocument({ report }: { report: Report }) {
         </div>
       )}
 
+      {/* Signature lines */}
       <div className="mt-10 grid grid-cols-1 gap-8 sm:mt-12 sm:grid-cols-2 sm:gap-16 print:grid-cols-2 print:break-inside-avoid">
         {["Prepared by (Guard on duty)", "Noted by (Security head)"].map((label) => (
           <div key={label}>

@@ -4,6 +4,7 @@ import { LogoMark } from "@/components/logo-mark";
 
 export const metadata = { title: "Apply as a security guard — EGardMo" };
 
+// Public guard application page.
 export default function ApplyPage() {
   return (
     <main className="min-h-dvh bg-primary px-4 py-8 text-primary-foreground sm:py-14">

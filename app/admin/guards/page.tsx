@@ -5,7 +5,9 @@ import { PageTitle } from "@/components/admin/page-title";
 
 export const metadata = { title: "Guards — EGardMo" };
 
+// Admin page: manage guard accounts.
 export default async function GuardsPage() {
+  // Fetch guards and the current user in parallel.
   const [guards, session] = await Promise.all([listGuards(), getSessionUser()]);
 
   return (

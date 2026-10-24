@@ -11,9 +11,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Capture size and quality limits.
 const MAX_DIMENSION = 1600; // longest edge of the saved photo, keeps uploads small
 const JPEG_QUALITY = 0.88;
 
+// Dialog state and capture callbacks.
 interface CameraCaptureProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -22,6 +24,7 @@ interface CameraCaptureProps {
   onUnavailable?: () => void;
 }
 
+// Turn a camera error into a friendly message.
 function describeCameraError(err: unknown): string {
   const name = err instanceof DOMException ? err.name : "";
   if (name === "NotAllowedError" || name === "SecurityError")
@@ -33,13 +36,16 @@ function describeCameraError(err: unknown): string {
   return "Could not start the camera.";
 }
 
+// Dialog with a live camera preview that captures a JPEG.
 export function CameraCapture({ open, onOpenChange, onCapture, onUnavailable }: CameraCaptureProps) {
+  // Video element, active stream, camera side, and UI state.
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Stop all camera tracks.
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -88,6 +94,7 @@ export function CameraCapture({ open, onOpenChange, onCapture, onUnavailable }: 
     };
   }, [open, video, facing, stopStream]);
 
+  // Draw the current frame to a canvas and return it as a JPEG file.
   function handleCapture() {
     if (!video || !video.videoWidth) return;
 
@@ -122,6 +129,7 @@ export function CameraCapture({ open, onOpenChange, onCapture, onUnavailable }: 
           </DialogDescription>
         </DialogHeader>
 
+        {/* Video preview with loading, error and framing overlays */}
         <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-black">
           <video
             ref={setVideo}
@@ -157,6 +165,7 @@ export function CameraCapture({ open, onOpenChange, onCapture, onUnavailable }: 
           )}
         </div>
 
+        {/* Controls */}
         <div className="flex items-center justify-between gap-2">
           <Button
             type="button"

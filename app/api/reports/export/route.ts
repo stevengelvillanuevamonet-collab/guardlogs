@@ -6,6 +6,7 @@ import { isValidDateString, todayInCampus } from "@/lib/utils";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Response content types for each export format.
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -16,11 +17,13 @@ const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingm
  * is reported). It defaults to today; `period` defaults to daily.
  */
 export async function GET(request: NextRequest) {
+  // Read and default the query parameters.
   const params = request.nextUrl.searchParams;
   const period = parsePeriod(params.get("period"));
   const date = params.get("date") || todayInCampus();
   const format = params.get("format") || "xlsx";
 
+  // Reject bad input early.
   if (!isValidDateString(date)) {
     return NextResponse.json({ error: "Invalid date. Use YYYY-MM-DD." }, { status: 400 });
   }
@@ -28,6 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Format must be xlsx or docx." }, { status: 400 });
   }
 
+  // Build the file and return it as a download.
   try {
     const report = await getReport(period, date);
     const body = format === "xlsx" ? await buildXlsx(report) : await buildDocx(report);
@@ -40,6 +44,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err) {
+    // Map auth failures to 401, everything else to 500.
     const message = err instanceof Error ? err.message : "Could not build report.";
     return NextResponse.json({ error: message }, { status: message === "Not signed in." ? 401 : 500 });
   }

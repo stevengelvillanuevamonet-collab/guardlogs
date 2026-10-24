@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+// Navigation item and group shapes.
 export type NavItem = {
   href: string;
   label: string;
@@ -19,6 +20,7 @@ export type NavItem = {
 
 export type NavGroup = { label: string; items: NavItem[] };
 
+// Sidebar links for guards.
 export const GUARD_NAV: NavGroup[] = [
   {
     label: "Workspace",
@@ -29,6 +31,7 @@ export const GUARD_NAV: NavGroup[] = [
   },
 ];
 
+// Sidebar links for admins.
 export const ADMIN_NAV: NavGroup[] = [
   {
     label: "Administration",
@@ -48,10 +51,12 @@ export const ADMIN_NAV: NavGroup[] = [
   },
 ];
 
+// Pick the nav groups for a role.
 export function navFor(role: "admin" | "guard"): NavGroup[] {
   return role === "admin" ? ADMIN_NAV : GUARD_NAV;
 }
 
+// True when the item matches the current path.
 export function isActivePath(pathname: string, { href, exact }: NavItem): boolean {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }

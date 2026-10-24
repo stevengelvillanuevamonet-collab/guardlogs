@@ -34,10 +34,12 @@ export async function AppShell({
   role?: "admin" | "guard";
   children: React.ReactNode;
 }) {
+  // Fetch the pending badge count (admins only) and cookies together.
   const [pending, cookieStore] = await Promise.all([
     role === "admin" ? countPendingApplications() : Promise.resolve(0),
     cookies(),
   ]);
+  // Sidebar is open unless the cookie says it was collapsed.
   const defaultOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== "false";
 
   return (

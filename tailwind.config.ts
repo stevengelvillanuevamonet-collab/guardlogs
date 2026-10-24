@@ -1,7 +1,9 @@
 import type { Config } from "tailwindcss";
 
+// Tailwind setup: theme tokens map to CSS variables in globals.css.
 const config: Config = {
   darkMode: ["class"],
+  // Files scanned for class names.
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -13,11 +15,13 @@ const config: Config = {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      // Fonts from next/font variables.
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
         serif: ["var(--font-serif)", "serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
+      // Semantic color tokens.
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -61,6 +65,7 @@ const config: Config = {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      // Radii derived from --radius.
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

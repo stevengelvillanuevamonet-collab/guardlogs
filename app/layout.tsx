@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+// Google fonts exposed as CSS variables.
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -26,11 +27,13 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
+// Site-wide page metadata.
 export const metadata: Metadata = {
   title: "EGardMo",
   description: "Digital visitor check-in and ID surrender log.",
 };
 
+// Root HTML shell with fonts and toast notifications.
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

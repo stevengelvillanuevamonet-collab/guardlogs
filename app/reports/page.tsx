@@ -8,17 +8,20 @@ import { isValidDateString, todayInCampus } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Visitor Reports — EGardMo" };
 
+// Report viewer driven by `period` and `date` query params.
 export default async function ReportsPage({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string; date?: string }>;
 }) {
+  // Normalize inputs: fall back to today and never allow future dates.
   const { period: periodParam, date: dateParam } = await searchParams;
   const today = todayInCampus();
   const period = parsePeriod(periodParam);
   const requested = dateParam && isValidDateString(dateParam) ? dateParam : today;
   const date = requested > today ? today : requested;
 
+  // Fetch the user and the report data.
   const session = await getSessionUser();
   const report = await getReport(period, date);
 

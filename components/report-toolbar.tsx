@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, shiftDate, shiftMonth } from "@/lib/utils";
 
+// Report granularity and tab labels.
 type Period = "daily" | "monthly" | "yearly";
 
 const TABS: { id: Period; label: string }[] = [
@@ -21,6 +22,7 @@ function shiftAnchor(period: Period, date: string, step: number): string {
   return `${Number(date.slice(0, 4)) + step}-01-01`;
 }
 
+// Controls for choosing the period and date, printing and exporting.
 export function ReportToolbar({
   period,
   date,
@@ -30,9 +32,11 @@ export function ReportToolbar({
   date: string;
   today: string;
 }) {
+  // Navigate by updating the URL.
   const router = useRouter();
   const go = (p: Period, d: string) => d && router.push(`/reports?period=${p}&date=${d}`);
 
+  // Derived values: month/year, whether we're at the latest period, labels and links.
   const month = date.slice(0, 7);
   const year = date.slice(0, 4);
   const isCurrent =
@@ -50,6 +54,7 @@ export function ReportToolbar({
 
   return (
     <div className="grid gap-3 print:hidden">
+      {/* Period tabs */}
       <div
         role="tablist"
         aria-label="Report period"
@@ -75,6 +80,7 @@ export function ReportToolbar({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+        {/* Date navigation */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -137,6 +143,7 @@ export function ReportToolbar({
           )}
         </div>
 
+        {/* Print and export actions */}
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="h-4 w-4" /> Print

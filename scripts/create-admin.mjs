@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Parse CLI arguments.
 const [, , email, password, ...nameParts] = process.argv;
 const fullName = nameParts.join(" ").trim();
 
+// Require email and password.
 if (!email || !password) {
   console.error(
     'Usage: node --env-file=.env.local scripts/create-admin.mjs <email> <password> ["Full Name"]'
@@ -10,6 +12,7 @@ if (!email || !password) {
   process.exit(1);
 }
 
+// Read Supabase credentials from the environment.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -20,6 +23,7 @@ if (!url || !serviceRoleKey) {
   process.exit(1);
 }
 
+// Admin client using the service role key (no session persisted).
 const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false },
 });
@@ -30,8 +34,10 @@ if (listError) {
   console.error("Could not look up existing accounts:", listError.message);
   process.exit(1);
 }
+// Look up an existing account by email.
 const existing = list.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
 
+// Promote the existing account, or create a new admin.
 let userId;
 if (existing) {
   const { error } = await supabase.auth.admin.updateUserById(existing.id, {
@@ -76,4 +82,5 @@ if (profileError) {
   );
 }
 
+// Next-step hint.
 console.log("Sign in at /login — admins land on /admin.");

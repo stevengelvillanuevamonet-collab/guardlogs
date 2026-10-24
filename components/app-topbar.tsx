@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 /** Slim bar above the page: sidebar toggle, where you are, and who's signed in. */
 export function AppTopbar({ email, role }: { email?: string | null; role: "admin" | "guard" }) {
+  // Flatten nav groups to find the current page.
   const pathname = usePathname();
   const items = navFor(role).flatMap((g) => g.items);
   // Longest matching href wins so /admin/guards isn't mistaken for /admin.
@@ -14,6 +15,7 @@ export function AppTopbar({ email, role }: { email?: string | null; role: "admin
     .filter((i) => isActivePath(pathname, i))
     .sort((a, b) => b.href.length - a.href.length)[0];
 
+  // Breadcrumb labels.
   const section = role === "admin" && pathname.startsWith("/admin") ? "Administration" : "EGardMo";
   const page = current?.label ?? (role === "admin" ? "Overview" : "Dashboard");
 

@@ -22,13 +22,16 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// Guard list with add, reset-password and activate/deactivate actions.
 export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[]; currentUserId: string }) {
+  // Dialog, credentials and busy-row state.
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [credentials, setCredentials] = useState<{ value: IssuedCredentials; title: string } | null>(null);
   const [isAdding, startAdding] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // Create a guard account and show the issued credentials.
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -50,6 +53,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
     });
   }
 
+  // Activate or deactivate a guard.
   async function toggleActive(g: GuardProfile) {
     setBusyId(g.id);
     try {
@@ -63,6 +67,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
     }
   }
 
+  // Confirm, then issue a new temporary password.
   async function resetPassword(g: GuardProfile) {
     if (!window.confirm(`Reset the password for ${g.full_name || g.email}? Their current password stops working immediately.`)) return;
     setBusyId(g.id);
@@ -76,6 +81,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
     }
   }
 
+  // Row actions; none for yourself or other admins.
   const actions = (g: GuardProfile) =>
     g.id === currentUserId || g.role === "admin" ? (
       <span className="text-xs text-muted-foreground">{g.id === currentUserId ? "You" : "Administrator"}</span>
@@ -93,6 +99,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
 
   return (
     <>
+      {/* Guards list */}
       <Card>
         <CardHeader className="flex flex-col items-start justify-between gap-3 space-y-0 sm:flex-row sm:items-center">
           <div>
@@ -164,6 +171,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
         </CardContent>
       </Card>
 
+      {/* Add-guard dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -200,6 +208,7 @@ export function GuardsPanel({ guards, currentUserId }: { guards: GuardProfile[];
         </DialogContent>
       </Dialog>
 
+      {/* One-time credentials dialog */}
       <CredentialsDialog
         credentials={credentials?.value ?? null}
         title={credentials?.title}

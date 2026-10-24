@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Parse CLI arguments.
 const [, , email, password, ...nameParts] = process.argv;
 const fullName = nameParts.join(" ").trim();
 
+// Require email and password.
 if (!email || !password) {
   console.error(
     'Usage: node --env-file=.env.local scripts/create-guard.mjs <email> <password> ["Full Name"]'
@@ -10,6 +12,7 @@ if (!email || !password) {
   process.exit(1);
 }
 
+// Read Supabase credentials from the environment.
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -20,10 +23,12 @@ if (!url || !serviceRoleKey) {
   process.exit(1);
 }
 
+// Admin client using the service role key (no session persisted).
 const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false },
 });
 
+// Create a pre-confirmed account with the guard role.
 const { data, error } = await supabase.auth.admin.createUser({
   email,
   password,
@@ -32,6 +37,7 @@ const { data, error } = await supabase.auth.admin.createUser({
   user_metadata: fullName ? { full_name: fullName } : undefined,
 });
 
+// Report failure or success.
 if (error) {
   console.error("Failed to create guard account:", error.message);
   process.exit(1);

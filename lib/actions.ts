@@ -7,6 +7,7 @@ import { VISIT_DESTINATIONS, VISIT_PURPOSES } from "./visit-options";
 
 // Photos are stored in a private Supabase bucket so the app can display them
 // without exposing the whole storage folder to the public internet.
+// Storage bucket name and signed URL lifetime.
 const ID_PHOTO_BUCKET = "visitor-ids";
 const ID_PHOTO_SIGNED_URL_TTL_SECONDS = 300;
 
@@ -110,6 +111,7 @@ export async function checkInVisitor(
       id_photo_path = await uploadIdPhoto(supabase, user.id, photo);
     }
 
+    // Insert the new log row.
     const { error } = await supabase.from("visitor_logs").insert({
       visitor_name,
       plate_number,

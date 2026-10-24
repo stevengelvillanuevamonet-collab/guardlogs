@@ -11,9 +11,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const metadata = { title: "Visitor logs — EGardMo" };
 
+// Supported query-string filters.
 type SearchParams = { q?: string; status?: string; from?: string; to?: string; page?: string };
 
+// Admin visitor log viewer with filters and pagination.
 export default async function AdminLogsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  // Sanitize filters from the URL.
   const sp = await searchParams;
 
   const status: VisitorLogFilters["status"] = sp.status === "inside" || sp.status === "out" ? sp.status : "all";
@@ -22,10 +25,12 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
   const q = (sp.q ?? "").slice(0, 80);
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
+  // Fetch the current page of logs.
   const result = await getAdminVisitorLogs({ q, status, from, to, page });
   const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize));
   const hasFilters = !!(q || from || to || status !== "all");
 
+  // Build a pagination link that keeps the active filters.
   const linkTo = (p: number) => {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
@@ -37,6 +42,7 @@ export default async function AdminLogsPage({ searchParams }: { searchParams: Pr
     return `/admin/logs${qs ? `?${qs}` : ""}`;
   };
 
+  // Row range shown in the footer.
   const firstRow = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
   const lastRow = Math.min(result.total, result.page * result.pageSize);
 

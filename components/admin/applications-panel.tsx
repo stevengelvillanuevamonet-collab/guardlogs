@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Status filter tabs.
 type Filter = ApplicationStatus | "all";
 
 const FILTERS: { id: Filter; label: string }[] = [
@@ -31,6 +32,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
 ];
 
+// Colored badge for an application status.
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   if (status === "approved") return <Badge variant="inside" dot>Approved</Badge>;
   if (status === "rejected") return <Badge variant="out" dot>Rejected</Badge>;
@@ -41,6 +43,7 @@ function StatusBadge({ status }: { status: ApplicationStatus }) {
   );
 }
 
+// Label/value pair in the detail view.
 function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
@@ -50,7 +53,9 @@ function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+// Applications list with filters and a review dialog.
 export function ApplicationsPanel({ applications }: { applications: GuardApplication[] }) {
+  // Filter, selected application, review and document state.
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("pending");
   const [selected, setSelected] = useState<GuardApplication | null>(null);
@@ -76,6 +81,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
     };
   }, [selectedId]);
 
+  // Tab counts and the filtered list.
   const counts = {
     pending: applications.filter((a) => a.status === "pending").length,
     approved: applications.filter((a) => a.status === "approved").length,
@@ -84,11 +90,13 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
   };
   const visible = filter === "all" ? applications : applications.filter((a) => a.status === filter);
 
+  // Open an application for review.
   function open(a: GuardApplication) {
     setSelected(a);
     setNote(a.review_note ?? "");
   }
 
+  // Approve or reject the selected application.
   function review(kind: "approve" | "reject") {
     if (!selected) return;
     const app = selected;
@@ -116,6 +124,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
 
   return (
     <>
+      {/* Filter tabs */}
       <div role="tablist" aria-label="Filter applications" className="mb-4 inline-flex max-w-full overflow-x-auto rounded-lg border bg-card p-1">
         {FILTERS.map((f) => (
           <button
@@ -137,6 +146,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
         ))}
       </div>
 
+      {/* Application list, or an empty state */}
       {visible.length === 0 ? (
         <Card>
           <CardContent className="py-14 text-center sm:pt-14">
@@ -178,6 +188,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
         </ul>
       )}
 
+      {/* Review dialog */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && !isPending && setSelected(null)}>
         <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
           {selected && (
@@ -192,6 +203,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
                 </DialogDescription>
               </DialogHeader>
 
+              {/* Applicant details */}
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Detail label="Email" value={selected.email} />
                 <Detail label="Phone" value={selected.phone} />
@@ -207,6 +219,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
                 </div>
               </dl>
 
+              {/* Uploaded documents */}
               <div className="grid gap-2 border-t pt-4">
                 <p className="text-xs text-muted-foreground">Submitted documents</p>
                 {docsError ? (
@@ -247,6 +260,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
                 )}
               </div>
 
+              {/* Review actions for pending, otherwise the past decision */}
               {selected.status === "pending" ? (
                 <div className="grid gap-4 border-t pt-4">
                   <div className="grid gap-2">
@@ -287,6 +301,7 @@ export function ApplicationsPanel({ applications }: { applications: GuardApplica
         </DialogContent>
       </Dialog>
 
+      {/* One-time credentials after approval */}
       <CredentialsDialog
         credentials={credentials}
         title="Guard approved"

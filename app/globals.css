@@ -1,7 +1,9 @@
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Theme color tokens (HSL) */
 @layer base {
   :root {
     /* Cool paper — deliberately not the warm-cream default */
@@ -52,6 +54,7 @@
   }
 }
 
+/* Global defaults */
 @layer base {
   * {
     @apply border-border;
@@ -62,6 +65,7 @@
   }
 }
 
+/* Equal-width digits for aligned numbers */
 .font-mono-tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -124,6 +128,7 @@
 }
 
 /* ---------- Login screen motion ---------- */
+/* Keyframes */
 @keyframes kenburns {
   from { transform: scale(1.05) translate3d(0, 0, 0); }
   to   { transform: scale(1.16) translate3d(-1.5%, -1%, 0); }
@@ -145,6 +150,7 @@
   60%, 100% { transform: translateX(260%) skewX(-20deg); }
 }
 
+/* Animation utility classes */
 .anim-kenburns { animation: kenburns 28s ease-in-out infinite alternate; }
 .anim-fade-up  { opacity: 0; animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; animation-delay: var(--d, 0ms); }
 .anim-rule     { transform-origin: left; animation: rule-grow 1s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -173,6 +179,7 @@
   transition: background-color 9999s ease-out 0s;
 }
 
+/* Disable motion for users who prefer less */
 @media (prefers-reduced-motion: reduce) {
   .anim-kenburns, .anim-drift, .btn-sheen::after { animation: none; }
   .anim-fade-up, .anim-rule { animation: none; opacity: 1; transform: none; }

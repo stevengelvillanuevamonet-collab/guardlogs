@@ -14,9 +14,11 @@ import { SIDEBAR_COOKIE_NAME } from "@/lib/sidebar";
  * slide-in sheet on mobile, remembers its state in a cookie and toggles with Ctrl/Cmd+B.
  */
 
+// Cookie lifetime and the desktop breakpoint.
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
+// Shared sidebar state and controls.
 type SidebarContextValue = {
   state: "expanded" | "collapsed";
   open: boolean;
@@ -28,12 +30,14 @@ type SidebarContextValue = {
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
 
+// Access sidebar state; must be inside SidebarProvider.
 export function useSidebar() {
   const ctx = React.useContext(SidebarContext);
   if (!ctx) throw new Error("useSidebar must be used within a SidebarProvider.");
   return ctx;
 }
 
+// Holds sidebar state, persists it to a cookie and binds Ctrl/Cmd+B.
 export function SidebarProvider({
   defaultOpen = true,
   className,
@@ -43,15 +47,18 @@ export function SidebarProvider({
   className?: string;
   children: React.ReactNode;
 }) {
+  // Desktop open state and mobile sheet state.
   const pathname = usePathname();
   const [open, setOpenState] = React.useState(defaultOpen);
   const [openMobile, setOpenMobile] = React.useState(false);
 
+  // Update state and remember it in a cookie.
   const setOpen = React.useCallback((value: boolean) => {
     setOpenState(value);
     document.cookie = `${SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; samesite=lax`;
   }, []);
 
+  // Collapse on desktop, open the sheet on mobile.
   const toggleSidebar = React.useCallback(() => {
     if (window.matchMedia(DESKTOP_QUERY).matches) setOpen(!open);
     else setOpenMobile((v) => !v);
@@ -78,6 +85,7 @@ export function SidebarProvider({
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
+  // Memoized context value.
   const value = React.useMemo<SidebarContextValue>(
     () => ({
       state: open ? "expanded" : "collapsed",
@@ -99,6 +107,7 @@ export function SidebarProvider({
   );
 }
 
+// Desktop rail plus mobile slide-in sheet.
 export function Sidebar({ className, children }: { className?: string; children: React.ReactNode }) {
   const ctx = useSidebar();
   const collapsed = ctx.state === "collapsed";
@@ -206,6 +215,7 @@ export function SidebarInset({ className, children }: { className?: string; chil
   );
 }
 
+// Top section of the sidebar.
 export function SidebarHeader({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <div className={cn("flex h-20 shrink-0 items-center px-3", className)}>
@@ -214,6 +224,7 @@ export function SidebarHeader({ className, children }: { className?: string; chi
   );
 }
 
+// Scrollable middle section.
 export function SidebarContent({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
@@ -227,14 +238,17 @@ export function SidebarContent({ className, children }: { className?: string; ch
   );
 }
 
+// Bottom section of the sidebar.
 export function SidebarFooter({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("flex shrink-0 flex-col gap-1 border-t border-sidebar-border p-3", className)}>{children}</div>;
 }
 
+// Group of related menu items.
 export function SidebarGroup({ className, children }: { className?: string; children: React.ReactNode }) {
   return <div className={cn("flex flex-col pb-2", className)}>{children}</div>;
 }
 
+// Group title; becomes a divider when collapsed.
 export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -260,14 +274,17 @@ export function SidebarGroupLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// List wrapper for menu items.
 export function SidebarMenu({ children }: { children: React.ReactNode }) {
   return <ul className="flex flex-col gap-1">{children}</ul>;
 }
 
+// Single menu entry.
 export function SidebarMenuItem({ children }: { children: React.ReactNode }) {
   return <li className="relative">{children}</li>;
 }
 
+// Props for a menu button.
 type MenuButtonProps = React.ComponentProps<"button"> & {
   /** Render as the child element (e.g. next/link) instead of a <button>. */
   asChild?: boolean;
@@ -276,6 +293,7 @@ type MenuButtonProps = React.ComponentProps<"button"> & {
   tooltip?: string;
 };
 
+// Menu button with active styling and a tooltip when collapsed.
 export function SidebarMenuButton({
   asChild = false,
   isActive = false,
@@ -286,6 +304,7 @@ export function SidebarMenuButton({
 }: MenuButtonProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  // Tooltip position (only used when collapsed).
   const [tip, setTip] = React.useState<{ top: number; left: number } | null>(null);
 
   React.useEffect(() => {
@@ -299,6 +318,7 @@ export function SidebarMenuButton({
   };
   const hide = () => setTip(null);
 
+  // Render as the child element or a button.
   const Comp = asChild ? SlotLike : "button";
 
   return (

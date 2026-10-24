@@ -1,3 +1,4 @@
+// Visitor log row and its status values.
 export type VisitorStatus = "Inside Campus" | "Checked Out";
 
 export interface VisitorLog {
@@ -16,6 +17,7 @@ export interface VisitorLog {
   id_photo_signed_url?: string | null; // attached at fetch time, expires after a few minutes — never stored
 }
 
+// Input collected by the check-in form.
 export interface CheckInInput {
   visitor_name: string;
   plate_number?: string;
@@ -29,6 +31,7 @@ export interface CheckInInput {
 export type ApplicationStatus = "pending" | "approved" | "rejected";
 export type ShiftPreference = "Day" | "Night" | "Any";
 
+// Guard job application.
 export interface GuardApplication {
   id: string;
   full_name: string;
@@ -47,6 +50,7 @@ export interface GuardApplication {
   created_at: string;
 }
 
+// File attached to an application.
 export interface ApplicationDocument {
   id: string;
   application_id: string;
@@ -59,6 +63,7 @@ export interface ApplicationDocument {
   signed_url?: string | null; // attached at fetch time, expires — never stored
 }
 
+// Guard/admin account profile.
 export interface GuardProfile {
   id: string;
   email: string | null;
